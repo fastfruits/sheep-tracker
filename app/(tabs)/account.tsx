@@ -1,19 +1,22 @@
-import { Colors } from '@/constants/theme';
-import { StyleSheet, Text, View } from 'react-native';
+// @ts-nocheck
+import React from 'react';
+import { StyleSheet, Text } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function AccountScreen() {
+  const insets = useSafeAreaInsets();
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={[styles.container, { paddingTop: insets.top + 16 }]}>
       <Text style={styles.title}>Account</Text>
       <Text style={styles.subtitle}>Profile and settings coming soon.</Text>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
     padding: 20,
     backgroundColor: '#636B2F',
@@ -25,7 +28,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    color: '#687076',
+    color: '#FFF',
     textAlign: 'center',
   },
 });
