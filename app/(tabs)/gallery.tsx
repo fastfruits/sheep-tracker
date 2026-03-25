@@ -3,12 +3,14 @@ import React from 'react';
 import { StyleSheet, Text } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-export default function AccountScreen() {
+export default function GalleryScreen() {
   const insets = useSafeAreaInsets();
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top + 16 }]}>
-      <Text style={styles.title}>Account</Text>
-      <Text style={styles.subtitle}>Profile and settings coming soon.</Text>
+      <Text style={styles.title}>Sheep Gallery</Text>
+      <Text style={styles.subtitle}>
+        Community photos will show up here soon.
+      </Text>
     </SafeAreaView>
   );
 }

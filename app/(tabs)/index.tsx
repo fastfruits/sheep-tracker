@@ -1,9 +1,12 @@
-import React, {useState} from "react";
-import {View, Text, Button, Image, StyleSheet, Alert} from "react-native";
+// @ts-nocheck
+import React, {useState} from 'react';
+import {Text, Button, Image, StyleSheet, Alert} from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 
 export default function Page(){
+  const insets = useSafeAreaInsets();
   const [photo, setPhoto] = useState<string | null>(null);
   const [location, setLocation] = useState<{ latitude: number; longitude: number} | null>(null);
 
@@ -27,7 +30,7 @@ export default function Page(){
   const getLocation = async () => {
     const {status} = await Location.requestForegroundPermissionsAsync();
     if(status !== "granted"){
-      alert("Permission to get location was denied");
+      Alert.alert("Permission to get location was denied");
       return;
     }
     const loc = await Location.getCurrentPositionAsync({});
@@ -35,7 +38,7 @@ export default function Page(){
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={[styles.container, { paddingTop: insets.top + 16 }]}>
       <Text style={styles.title}>Report a sheep</Text>
 
       <Button title="Take a Photo" onPress={takePhoto} />
@@ -47,14 +50,14 @@ export default function Page(){
           {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
         </Text>
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
+    justifyContent: "flex-start",
     alignItems: "center",
     padding: 20,
     backgroundColor: "#636B2F",
