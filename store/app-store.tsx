@@ -3,6 +3,26 @@ import React, { createContext, useContext, useState } from 'react';
 
 export type Species = 'sheep' | 'cow' | 'goat' | 'pig' | 'horse' | 'dog' | 'cat' | 'chicken' | 'other';
 
+export const SEED_USERS = {
+  'user-sarah':   { id: 'user-sarah',   name: 'Sarah K.',         isFarmer: false },
+  'user-tom':     { id: 'user-tom',     name: 'Tom B.',           isFarmer: false },
+  'user-emma':    { id: 'user-emma',    name: 'Emma R.',          isFarmer: false },
+  'user-pete':    { id: 'user-pete',    name: 'Pete M.',          isFarmer: false },
+  'user-anna':    { id: 'user-anna',    name: 'Anna W.',          isFarmer: false },
+  'farmer-james': { id: 'farmer-james', name: 'James McGregor',   isFarmer: true, farmName: 'Highland Farm' },
+  'farmer-sue':   { id: 'farmer-sue',   name: 'Sue Patterson',    isFarmer: true, farmName: 'Cloverfield Ranch' },
+};
+
+const SEED_FOLLOW_GRAPH = {
+  'user-sarah':   ['user-tom', 'user-emma', 'farmer-james'],
+  'user-tom':     ['user-sarah', 'user-emma'],
+  'user-emma':    ['user-sarah', 'user-pete', 'farmer-james'],
+  'user-pete':    ['user-tom', 'user-sarah'],
+  'user-anna':    ['user-sarah', 'user-emma', 'user-tom', 'user-pete'],
+  'farmer-james': ['user-sarah', 'user-anna'],
+  'farmer-sue':   ['farmer-james'],
+};
+
 export interface User {
   id: string;
   name: string;
@@ -44,6 +64,7 @@ export interface Post {
   latitude?: number;
   longitude?: number;
   likes: string[];
+  confirmations: string[]; // userIds who confirmed "I've seen this too"
   comments: Comment[];
   timestamp: number;
   isSighting: boolean;
@@ -127,6 +148,7 @@ const SEED_POSTS: Post[] = [
     comments: [
       { id: 'c1', userId: 'user-tom', userName: 'Tom B.', text: 'Aww poor thing! Hope she gets home safe 🐑', timestamp: now - 3000000 },
     ],
+    confirmations: ['user-pete', 'user-anna'],
     timestamp: now - 7200000,
     isSighting: true,
     sightingStatus: 'open',
@@ -138,6 +160,7 @@ const SEED_POSTS: Post[] = [
     caption: "My neighbor's cows visited my garden this morning 😂 Ate half my roses but honestly they're too cute",
     species: 'cow',
     locationLabel: 'Greenfield Village',
+    confirmations: [],
     likes: ['user-sarah', 'user-emma', 'user-pete', 'user-anna'],
     comments: [],
     timestamp: now - 86400000,
@@ -150,6 +173,7 @@ const SEED_POSTS: Post[] = [
     caption: 'This fluffy highland cow walked up to my car window and stared at me for a full minute. Made my week 🐄❤️',
     species: 'cow',
     locationLabel: 'Highland Trail, near the old mill',
+    confirmations: [],
     likes: ['user-tom', 'user-sarah', 'user-pete'],
     comments: [
       { id: 'c2', userId: 'user-pete', userName: 'Pete M.', text: "That's Hamish from the farm on the hill! Totally harmless, very nosy 😄", timestamp: now - 168000000 },
@@ -167,6 +191,7 @@ const SEED_POSTS: Post[] = [
     primaryColor: 'brown',
     markings: 'white patches, two had ear tags',
     locationLabel: 'B7024, opposite the petrol station',
+    confirmations: ['user-sarah', 'user-tom'],
     likes: ['user-anna'],
     comments: [],
     timestamp: now - 259200000,
@@ -180,6 +205,7 @@ const SEED_POSTS: Post[] = [
     caption: 'The lambs at the farm down the road had babies last week! Absolute tiny fluffy perfection 🌿',
     species: 'sheep',
     locationLabel: 'Green Lane Farm',
+    confirmations: [],
     likes: ['user-tom', 'user-emma', 'user-sarah', 'user-pete'],
     comments: [
       { id: 'c4', userId: 'user-sarah', userName: 'Sarah K.', text: 'I NEED to visit them 😭', timestamp: now - 430000000 },
@@ -196,6 +222,7 @@ export function AppProvider({ children }) {
   const [posts, setPosts] = useState(SEED_POSTS);
   const [registeredAnimals, setRegisteredAnimals] = useState(SEED_ANIMALS);
   const [notifications, setNotifications] = useState([]);
+  const [followGraph, setFollowGraph] = useState(SEED_FOLLOW_GRAPH);
 
   const login = (name, email, isFarmer, farmName) => {
     setCurrentUser({
@@ -239,6 +266,7 @@ export function AppProvider({ children }) {
       locationLabel: data.locationLabel,
       latitude: data.latitude,
       longitude: data.longitude,
+      confirmations: [],
       likes: [],
       comments: [],
       timestamp: Date.now(),
@@ -285,6 +313,7 @@ export function AppProvider({ children }) {
       caption: data.caption,
       species: data.species,
       locationLabel: data.locationLabel,
+      confirmations: [],
       likes: [],
       comments: [],
       timestamp: Date.now(),
@@ -318,6 +347,46 @@ export function AppProvider({ children }) {
     }]);
   };
 
+  const toggleFollow = (targetId) => {
+    if (!currentUser) return;
+    setFollowGraph(prev => {
+      const mine = prev[currentUser.id] ?? [];
+      const already = mine.includes(targetId);
+      return { ...prev, [currentUser.id]: already ? mine.filter(id => id !== targetId) : [...mine, targetId] };
+    });
+  };
+
+  const isFollowing = (targetId) => {
+    if (!currentUser) return false;
+    return (followGraph[currentUser.id] ?? []).includes(targetId);
+  };
+
+  const getFollowerCount = (userId) =>
+    Object.values(followGraph).filter(arr => arr.includes(userId)).length;
+
+  const getFollowingCount = (userId) =>
+    (followGraph[userId] ?? []).length;
+
+  const getUserById = (userId) => {
+    if (currentUser?.id === userId) return currentUser;
+    return SEED_USERS[userId] ?? null;
+  };
+
+  const toggleConfirmation = (postId) => {
+    const userId = currentUser?.id ?? 'guest';
+    setPosts(prev => prev.map(p => {
+      if (p.id !== postId) return p;
+      const has = p.confirmations.includes(userId);
+      return { ...p, confirmations: has ? p.confirmations.filter(id => id !== userId) : [...p.confirmations, userId] };
+    }));
+  };
+
+  const markReunited = (postId) => {
+    setPosts(prev => prev.map(p =>
+      p.id === postId ? { ...p, sightingStatus: 'resolved' } : p
+    ));
+  };
+
   const markNotificationsRead = () => {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   };
@@ -329,7 +398,8 @@ export function AppProvider({ children }) {
     <AppContext.Provider value={{
       currentUser, posts, registeredAnimals, notifications: myNotifications, unreadCount,
       login, logout, signup, submitSighting, addCommunityPost,
-      toggleLike, addComment, registerAnimal, markNotificationsRead,
+      toggleLike, addComment, registerAnimal, toggleConfirmation, markReunited, markNotificationsRead,
+      toggleFollow, isFollowing, getFollowerCount, getFollowingCount, getUserById,
     }}>
       {children}
     </AppContext.Provider>

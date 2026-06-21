@@ -1,12 +1,13 @@
 // @ts-nocheck
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   Image, TextInput, Modal, ScrollView,
-  KeyboardAvoidingView, Platform, Alert,
+  KeyboardAvoidingView, Platform, Alert, Share, RefreshControl,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
+import { useRouter } from 'expo-router';
 import { useApp, SPECIES_LIST, timeAgo } from '@/store/app-store';
 
 const C = {
@@ -25,6 +26,8 @@ const C = {
   escapedBorder: '#F3AA8C',
   resolvedBg: '#EDFAF1',
   resolvedBorder: '#74C98A',
+  confirmBlue: '#1D6FA4',
+  confirmBlueBg: '#EBF4FB',
 };
 
 const FILTERS = [
@@ -33,27 +36,58 @@ const FILTERS = [
   { key: 'Community', label: '📸 Community' },
 ];
 
-function PostCard({ post, currentUserId, onLike, onAddComment }) {
+const SORT_OPTIONS = [
+  { key: 'newest', label: 'Newest' },
+  { key: 'active', label: 'Most Active' },
+  { key: 'confirmed', label: 'Most Confirmed' },
+];
+
+function stringToColor(str) {
+  const colors = ['#2E7D32', '#1565C0', '#6A1B9A', '#AD1457', '#00695C', '#E65100'];
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = str.charCodeAt(i) + ((h << 5) - h);
+  return colors[Math.abs(h) % colors.length];
+}
+
+function PostCard({ post, currentUserId, onLike, onAddComment, onConfirm, onShare, onReunite }) {
+  const router = useRouter();
   const [commentOpen, setCommentOpen] = useState(false);
   const [commentText, setCommentText] = useState('');
   const isLiked = post.likes.includes(currentUserId ?? 'guest');
+  const isConfirmed = post.confirmations.includes(currentUserId ?? 'guest');
+  const isAuthor = post.userId === currentUserId;
   const speciesInfo = SPECIES_LIST.find(s => s.value === post.species);
   const isEscaped = post.isSighting && post.sightingStatus !== 'resolved';
   const isResolved = post.isSighting && post.sightingStatus === 'resolved';
 
   const submitComment = () => {
-    const text = commentText.trim();
-    if (!text) return;
-    onAddComment(post.id, text);
+    const t = commentText.trim();
+    if (!t) return;
+    onAddComment(post.id, t);
     setCommentText('');
+  };
+
+  const handleReunite = () => {
+    Alert.alert(
+      'Mark as Reunited?',
+      'This will close the sighting and mark it as resolved.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Mark Reunited', onPress: () => onReunite(post.id) },
+      ]
+    );
   };
 
   return (
     <View style={styles.card}>
-      {/* Escaped/resolved banner */}
       {isEscaped && (
         <View style={styles.escapedBanner}>
           <Text style={styles.escapedBannerText}>🚨  Escaped Animal — Help needed!</Text>
+          {post.confirmations.length > 0 && (
+            <Text style={styles.confirmCount}>
+              👁 {post.confirmations.length} also saw this
+            </Text>
+          )}
         </View>
       )}
       {isResolved && (
@@ -62,7 +96,6 @@ function PostCard({ post, currentUserId, onLike, onAddComment }) {
         </View>
       )}
 
-      {/* Photo */}
       {post.photo ? (
         <Image source={{ uri: post.photo }} style={styles.cardPhoto} />
       ) : (
@@ -72,15 +105,20 @@ function PostCard({ post, currentUserId, onLike, onAddComment }) {
       )}
 
       <View style={styles.cardBody}>
-        {/* Header row */}
         <View style={styles.cardHeader}>
-          <View style={[styles.avatar, { backgroundColor: stringToColor(post.userName) }]}>
-            <Text style={styles.avatarText}>{post.userName.charAt(0)}</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.cardUserName}>{post.userName}</Text>
-            <Text style={styles.cardTime}>{timeAgo(post.timestamp)}</Text>
-          </View>
+          <TouchableOpacity
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}
+            onPress={() => router.push(`/profile/${post.userId}`)}
+            activeOpacity={0.75}
+          >
+            <View style={[styles.avatar, { backgroundColor: stringToColor(post.userName) }]}>
+              <Text style={styles.avatarText}>{post.userName.charAt(0)}</Text>
+            </View>
+            <View>
+              <Text style={styles.cardUserName}>{post.userName}</Text>
+              <Text style={styles.cardTime}>{timeAgo(post.timestamp)}</Text>
+            </View>
+          </TouchableOpacity>
           {speciesInfo && (
             <View style={styles.speciesTag}>
               <Text style={styles.speciesTagText}>{speciesInfo.emoji} {speciesInfo.label}</Text>
@@ -88,10 +126,8 @@ function PostCard({ post, currentUserId, onLike, onAddComment }) {
           )}
         </View>
 
-        {/* Caption */}
         <Text style={styles.caption}>{post.caption}</Text>
 
-        {/* Sighting details */}
         {post.isSighting && (post.markings || post.primaryColor) && (
           <View style={styles.detailsBox}>
             {post.primaryColor && (
@@ -109,7 +145,6 @@ function PostCard({ post, currentUserId, onLike, onAddComment }) {
           </View>
         )}
 
-        {/* Location */}
         {post.locationLabel && (
           <View style={styles.locationRow}>
             <Text style={styles.locationIcon}>📍</Text>
@@ -117,19 +152,44 @@ function PostCard({ post, currentUserId, onLike, onAddComment }) {
           </View>
         )}
 
-        {/* Actions */}
+        {/* Action bar */}
         <View style={styles.actions}>
           <TouchableOpacity style={styles.actionBtn} onPress={() => onLike(post.id)} activeOpacity={0.7}>
             <Text style={styles.actionIcon}>{isLiked ? '❤️' : '🤍'}</Text>
             <Text style={[styles.actionLabel, isLiked && { color: C.red }]}>{post.likes.length}</Text>
           </TouchableOpacity>
+
           <TouchableOpacity style={styles.actionBtn} onPress={() => setCommentOpen(v => !v)} activeOpacity={0.7}>
             <Text style={styles.actionIcon}>💬</Text>
             <Text style={styles.actionLabel}>{post.comments.length}</Text>
           </TouchableOpacity>
+
+          {isEscaped && (
+            <TouchableOpacity
+              style={[styles.actionBtn, styles.confirmBtn, isConfirmed && styles.confirmBtnActive]}
+              onPress={() => onConfirm(post.id)}
+              activeOpacity={0.75}
+            >
+              <Text style={styles.actionIcon}>👁</Text>
+              <Text style={[styles.actionLabel, { color: isConfirmed ? C.confirmBlue : C.textSec }]}>
+                {post.confirmations.length > 0 ? `Seen (${post.confirmations.length})` : 'Seen it too'}
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          <View style={{ flex: 1 }} />
+
+          <TouchableOpacity style={styles.actionBtn} onPress={() => onShare(post)} activeOpacity={0.7}>
+            <Text style={styles.actionIcon}>↑</Text>
+          </TouchableOpacity>
+
+          {isEscaped && isAuthor && (
+            <TouchableOpacity style={[styles.actionBtn, styles.reuniteBtn]} onPress={handleReunite} activeOpacity={0.8}>
+              <Text style={styles.reuniteBtnText}>Mark Reunited</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
-        {/* Comments section */}
         {commentOpen && (
           <View style={styles.commentsWrap}>
             {post.comments.map(c => (
@@ -159,28 +219,67 @@ function PostCard({ post, currentUserId, onLike, onAddComment }) {
   );
 }
 
-function stringToColor(str) {
-  const colors = ['#2E7D32', '#1565C0', '#6A1B9A', '#AD1457', '#00695C', '#E65100'];
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  return colors[Math.abs(hash) % colors.length];
-}
-
 export default function GalleryScreen() {
   const insets = useSafeAreaInsets();
-  const { posts, currentUser, toggleLike, addComment, addCommunityPost } = useApp();
+  const { posts, currentUser, toggleLike, addComment, addCommunityPost, toggleConfirmation, markReunited } = useApp();
   const [filter, setFilter] = useState('All');
+  const [sort, setSort] = useState('newest');
+  const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [sortOpen, setSortOpen] = useState(false);
+
+  // Share modal state
   const [sharePhoto, setSharePhoto] = useState(null);
   const [shareCaption, setShareCaption] = useState('');
   const [shareSpecies, setShareSpecies] = useState(null);
   const [shareLocation, setShareLocation] = useState('');
 
-  const filtered = posts.filter(p => {
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 800);
+  }, []);
+
+  const handleShare = async (post) => {
+    const species = SPECIES_LIST.find(s => s.value === post.species);
+    const msg = [
+      post.isSighting ? '🚨 Escaped animal sighting on SheepFinder' : '📸 Animal spotted on SheepFinder',
+      species ? `${species.emoji} ${species.label}` : '',
+      post.locationLabel ? `📍 ${post.locationLabel}` : '',
+      post.caption,
+    ].filter(Boolean).join('\n');
+    try {
+      await Share.share({ message: msg });
+    } catch { /* dismissed */ }
+  };
+
+  const q = search.trim().toLowerCase();
+  let filtered = posts.filter(p => {
     if (filter === 'Escaped') return p.isSighting && p.sightingStatus !== 'resolved';
     if (filter === 'Community') return !p.isSighting;
     return true;
   });
+
+  if (q) {
+    filtered = filtered.filter(p => {
+      const speciesLabel = SPECIES_LIST.find(s => s.value === p.species)?.label ?? '';
+      return (
+        p.caption.toLowerCase().includes(q) ||
+        (p.locationLabel ?? '').toLowerCase().includes(q) ||
+        speciesLabel.toLowerCase().includes(q) ||
+        p.userName.toLowerCase().includes(q) ||
+        (p.primaryColor ?? '').toLowerCase().includes(q) ||
+        (p.markings ?? '').toLowerCase().includes(q)
+      );
+    });
+  }
+
+  if (sort === 'active') {
+    filtered = [...filtered].sort((a, b) => (b.likes.length + b.comments.length) - (a.likes.length + a.comments.length));
+  } else if (sort === 'confirmed') {
+    filtered = [...filtered].sort((a, b) => b.confirmations.length - a.confirmations.length);
+  }
+  // newest: already ordered by insert order (newest first)
 
   const pickPhoto = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -196,18 +295,58 @@ export default function GalleryScreen() {
     setSharePhoto(null); setShareCaption(''); setShareSpecies(null); setShareLocation('');
   };
 
+  const openSightings = posts.filter(p => p.isSighting && p.sightingStatus !== 'resolved').length;
+
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
         <View>
           <Text style={styles.headerTitle}>Community</Text>
-          <Text style={styles.headerSub}>{posts.filter(p => p.isSighting && p.sightingStatus !== 'resolved').length} open sightings</Text>
+          <Text style={styles.headerSub}>
+            {openSightings > 0 ? `${openSightings} open sighting${openSightings > 1 ? 's' : ''}` : 'No open sightings'}
+          </Text>
         </View>
         <TouchableOpacity style={styles.shareBtn} onPress={() => setModalOpen(true)} activeOpacity={0.85}>
           <Text style={styles.shareBtnText}>+ Share</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Search bar */}
+      <View style={styles.searchRow}>
+        <View style={styles.searchBox}>
+          <Text style={styles.searchIcon}>🔍</Text>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search animals, locations, keywords…"
+            placeholderTextColor={C.textSec}
+            value={search}
+            onChangeText={setSearch}
+            returnKeyType="search"
+            clearButtonMode="while-editing"
+          />
+        </View>
+        <TouchableOpacity style={styles.sortBtn} onPress={() => setSortOpen(v => !v)} activeOpacity={0.8}>
+          <Text style={styles.sortBtnText}>⇅</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Sort picker */}
+      {sortOpen && (
+        <View style={styles.sortMenu}>
+          {SORT_OPTIONS.map(o => (
+            <TouchableOpacity
+              key={o.key}
+              style={[styles.sortOption, sort === o.key && styles.sortOptionActive]}
+              onPress={() => { setSort(o.key); setSortOpen(false); }}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.sortOptionText, sort === o.key && styles.sortOptionTextActive]}>{o.label}</Text>
+              {sort === o.key && <Text style={styles.sortCheck}>✓</Text>}
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
 
       {/* Filter tabs */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
@@ -227,17 +366,43 @@ export default function GalleryScreen() {
         data={filtered}
         keyExtractor={p => p.id}
         renderItem={({ item }) => (
-          <PostCard post={item} currentUserId={currentUser?.id} onLike={toggleLike} onAddComment={addComment} />
+          <PostCard
+            post={item}
+            currentUserId={currentUser?.id}
+            onLike={toggleLike}
+            onAddComment={addComment}
+            onConfirm={toggleConfirmation}
+            onShare={handleShare}
+            onReunite={markReunited}
+          />
         )}
         contentContainerStyle={styles.feed}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={C.green}
+            colors={[C.green]}
+          />
+        }
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyEmoji}>🌿</Text>
-            <Text style={styles.emptyTitle}>Nothing here yet</Text>
+            <Text style={styles.emptyEmoji}>{q ? '🔍' : '🌿'}</Text>
+            <Text style={styles.emptyTitle}>{q ? 'No results' : 'Nothing here yet'}</Text>
             <Text style={styles.emptySub}>
-              {filter === 'Escaped' ? 'No open sightings right now.' : 'Be the first to share a photo!'}
+              {q
+                ? `No posts match "${search}"`
+                : filter === 'Escaped'
+                  ? 'No open sightings right now.'
+                  : 'Be the first to share a photo!'}
             </Text>
+            {q && (
+              <TouchableOpacity onPress={() => setSearch('')} style={styles.clearSearch}>
+                <Text style={styles.clearSearchText}>Clear search</Text>
+              </TouchableOpacity>
+            )}
           </View>
         }
       />
@@ -265,7 +430,6 @@ export default function GalleryScreen() {
                     </View>
                 }
               </TouchableOpacity>
-
               <TextInput
                 style={[styles.input, styles.inputMulti]}
                 placeholder="What's the story with this animal?"
@@ -274,7 +438,6 @@ export default function GalleryScreen() {
                 onChangeText={setShareCaption}
                 multiline
               />
-
               <Text style={styles.label}>Animal type (optional)</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pillRow}>
                 {SPECIES_LIST.map(s => (
@@ -289,7 +452,6 @@ export default function GalleryScreen() {
                   </TouchableOpacity>
                 ))}
               </ScrollView>
-
               <Text style={styles.label}>Location (optional)</Text>
               <TextInput
                 style={styles.input}
@@ -312,17 +474,43 @@ const styles = StyleSheet.create({
 
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingTop: 4, paddingBottom: 12,
+    paddingHorizontal: 20, paddingTop: 4, paddingBottom: 10,
   },
   headerTitle: { fontSize: 28, fontWeight: '800', color: C.text, letterSpacing: -0.5 },
   headerSub: { fontSize: 13, color: C.textSec, marginTop: 1 },
-  shareBtn: {
-    backgroundColor: C.green, paddingHorizontal: 18, paddingVertical: 9,
-    borderRadius: 100,
-  },
+  shareBtn: { backgroundColor: C.green, paddingHorizontal: 18, paddingVertical: 9, borderRadius: 100 },
   shareBtnText: { color: '#FFF', fontWeight: '800', fontSize: 14 },
 
-  filterRow: { paddingHorizontal: 20, paddingBottom: 12, gap: 8 },
+  searchRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginBottom: 10, alignItems: 'center' },
+  searchBox: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: C.card, borderRadius: 12, borderWidth: 1.5,
+    borderColor: C.border, paddingHorizontal: 12, paddingVertical: 10,
+  },
+  searchIcon: { fontSize: 15 },
+  searchInput: { flex: 1, fontSize: 15, color: C.text },
+  sortBtn: {
+    backgroundColor: C.card, borderRadius: 12, borderWidth: 1.5,
+    borderColor: C.border, width: 44, height: 44, justifyContent: 'center', alignItems: 'center',
+  },
+  sortBtnText: { fontSize: 18, color: C.textSec },
+
+  sortMenu: {
+    marginHorizontal: 16, backgroundColor: C.card, borderRadius: 12,
+    borderWidth: 1, borderColor: C.border, marginBottom: 10,
+    overflow: 'hidden',
+  },
+  sortOption: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingVertical: 13,
+    borderBottomWidth: 1, borderBottomColor: C.border,
+  },
+  sortOptionActive: { backgroundColor: C.greenLight },
+  sortOptionText: { fontSize: 15, color: C.text, fontWeight: '600' },
+  sortOptionTextActive: { color: C.green },
+  sortCheck: { fontSize: 15, color: C.green, fontWeight: '800' },
+
+  filterRow: { paddingHorizontal: 16, paddingBottom: 10, gap: 8 },
   filterPill: {
     paddingHorizontal: 16, paddingVertical: 8, borderRadius: 100,
     backgroundColor: C.card, borderWidth: 1.5, borderColor: C.border,
@@ -339,9 +527,17 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 }, elevation: 2,
   },
-  escapedBanner: { backgroundColor: C.escapedBg, paddingVertical: 10, paddingHorizontal: 14, borderBottomWidth: 1, borderBottomColor: C.escapedBorder },
+  escapedBanner: {
+    backgroundColor: C.escapedBg, paddingVertical: 10, paddingHorizontal: 14,
+    borderBottomWidth: 1, borderBottomColor: C.escapedBorder,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+  },
   escapedBannerText: { fontSize: 13, fontWeight: '700', color: C.orange },
-  resolvedBanner: { backgroundColor: C.resolvedBg, paddingVertical: 10, paddingHorizontal: 14, borderBottomWidth: 1, borderBottomColor: C.resolvedBorder },
+  confirmCount: { fontSize: 12, color: C.confirmBlue, fontWeight: '600' },
+  resolvedBanner: {
+    backgroundColor: C.resolvedBg, paddingVertical: 10, paddingHorizontal: 14,
+    borderBottomWidth: 1, borderBottomColor: C.resolvedBorder,
+  },
   resolvedBannerText: { fontSize: 13, fontWeight: '700', color: '#1A7A3A' },
 
   cardPhoto: { width: '100%', height: 240, resizeMode: 'cover' },
@@ -369,12 +565,24 @@ const styles = StyleSheet.create({
   locationText: { fontSize: 13, color: C.textSec, flex: 1 },
 
   actions: {
-    flexDirection: 'row', gap: 18, paddingTop: 4,
-    borderTopWidth: 1, borderTopColor: C.border, paddingTop: 10,
+    flexDirection: 'row', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+    paddingTop: 10, borderTopWidth: 1, borderTopColor: C.border,
   },
-  actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  actionIcon: { fontSize: 20 },
+  actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  actionIcon: { fontSize: 19 },
   actionLabel: { fontSize: 14, fontWeight: '600', color: C.textSec },
+
+  confirmBtn: {
+    paddingHorizontal: 10, paddingVertical: 5, borderRadius: 100,
+    borderWidth: 1.5, borderColor: C.border,
+  },
+  confirmBtnActive: { backgroundColor: C.confirmBlueBg, borderColor: C.confirmBlue },
+
+  reuniteBtn: {
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 100,
+    backgroundColor: C.resolvedBg, borderWidth: 1.5, borderColor: C.resolvedBorder,
+  },
+  reuniteBtnText: { fontSize: 13, fontWeight: '700', color: '#1A7A3A' },
 
   commentsWrap: { gap: 8, borderTopWidth: 1, borderTopColor: C.border, paddingTop: 10 },
   commentRow: { flexDirection: 'row', flexWrap: 'wrap' },
@@ -391,6 +599,8 @@ const styles = StyleSheet.create({
   emptyEmoji: { fontSize: 54 },
   emptyTitle: { fontSize: 18, fontWeight: '800', color: C.text },
   emptySub: { fontSize: 14, color: C.textSec, textAlign: 'center', paddingHorizontal: 40, lineHeight: 21 },
+  clearSearch: { marginTop: 8, paddingHorizontal: 20, paddingVertical: 10, backgroundColor: C.green, borderRadius: 100 },
+  clearSearchText: { color: '#FFF', fontWeight: '700', fontSize: 14 },
 
   modal: { flex: 1, backgroundColor: C.bg },
   modalBar: {
@@ -405,8 +615,7 @@ const styles = StyleSheet.create({
 
   sharePhotoBox: {
     width: '100%', height: 200, borderRadius: 16, overflow: 'hidden',
-    backgroundColor: C.card, borderWidth: 1.5, borderColor: C.border,
-    borderStyle: 'dashed',
+    backgroundColor: C.card, borderWidth: 1.5, borderColor: C.border, borderStyle: 'dashed',
   },
   sharePhotoEmpty: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 8 },
   sharePhotoLabel: { fontSize: 15, fontWeight: '600', color: C.textSec },
