@@ -147,7 +147,7 @@ function AddAnimalInline({ onAdd }) {
 }
 
 // ─── Auth screen (login / 2-step signup) ─────────────────────────────────────
-function AuthScreen({ onComplete }) {
+function AuthScreen({ onLogin, onSignup, authLoading, authError, clearAuthError }) {
   const [mode, setMode] = useState('login'); // 'login' | 'signup-1' | 'signup-2'
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -156,24 +156,28 @@ function AuthScreen({ onComplete }) {
   const [farmName, setFarmName] = useState('');
   const [animals, setAnimals] = useState([]);
 
+  const switchMode = (m) => { clearAuthError(); setMode(m); };
+
   const goToStep2 = () => {
     if (!name.trim()) { Alert.alert('Enter your full name'); return; }
     if (!email.trim()) { Alert.alert('Enter your email'); return; }
+    if (!password || password.length < 6) { Alert.alert('Password must be at least 6 characters'); return; }
     if (isFarmer && !farmName.trim()) { Alert.alert('Enter your farm name'); return; }
     if (isFarmer) {
       setMode('signup-2');
     } else {
-      onComplete(name.trim(), email.trim(), false, undefined, []);
+      onSignup(name.trim(), email.trim(), password, false, undefined, []);
     }
   };
 
   const finishSignup = () => {
-    onComplete(name.trim(), email.trim(), true, farmName.trim(), animals);
+    onSignup(name.trim(), email.trim(), password, true, farmName.trim(), animals);
   };
 
   const handleLogin = () => {
     if (!email.trim()) { Alert.alert('Enter your email'); return; }
-    onComplete(email.split('@')[0] || 'User', email.trim(), false, undefined, []);
+    if (!password) { Alert.alert('Enter your password'); return; }
+    onLogin(email.trim(), password);
   };
 
   if (mode === 'signup-2') {
@@ -194,13 +198,16 @@ function AuthScreen({ onComplete }) {
 
         <AddAnimalInline onAdd={a => setAnimals(prev => [...prev, a])} />
 
+        {authError ? <Text style={styles.authError}>{authError}</Text> : null}
+
         <TouchableOpacity
-          style={[styles.btnPrimary, { marginTop: 24 }]}
+          style={[styles.btnPrimary, { marginTop: 24 }, authLoading && { opacity: 0.6 }]}
           onPress={finishSignup}
+          disabled={authLoading}
           activeOpacity={0.85}
         >
           <Text style={styles.btnPrimaryText}>
-            {animals.length === 0 ? 'Skip & Create Account' : `Create Account with ${animals.length} animal${animals.length > 1 ? 's' : ''}`}
+            {authLoading ? 'Creating account…' : animals.length === 0 ? 'Skip & Create Account' : `Create Account with ${animals.length} animal${animals.length > 1 ? 's' : ''}`}
           </Text>
         </TouchableOpacity>
         <View style={{ height: 40 }} />
@@ -221,14 +228,14 @@ function AuthScreen({ onComplete }) {
       <View style={styles.authTabs}>
         <TouchableOpacity
           style={[styles.authTab, mode === 'login' && styles.authTabActive]}
-          onPress={() => setMode('login')}
+          onPress={() => switchMode('login')}
           activeOpacity={0.8}
         >
           <Text style={[styles.authTabText, mode === 'login' && styles.authTabTextActive]}>Log in</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.authTab, mode === 'signup-1' && styles.authTabActive]}
-          onPress={() => setMode('signup-1')}
+          onPress={() => switchMode('signup-1')}
           activeOpacity={0.8}
         >
           <Text style={[styles.authTabText, mode === 'signup-1' && styles.authTabTextActive]}>Sign up</Text>
@@ -289,13 +296,19 @@ function AuthScreen({ onComplete }) {
         />
       )}
 
+      {authError ? <Text style={styles.authError}>{authError}</Text> : null}
+
       <TouchableOpacity
-        style={[styles.btnPrimary, { marginTop: 20 }]}
+        style={[styles.btnPrimary, { marginTop: 16 }, authLoading && { opacity: 0.6 }]}
         onPress={mode === 'login' ? handleLogin : goToStep2}
+        disabled={authLoading}
         activeOpacity={0.85}
       >
         <Text style={styles.btnPrimaryText}>
-          {mode === 'login' ? 'Log in' : isFarmer ? 'Continue →' : 'Create Account'}
+          {authLoading
+            ? (mode === 'login' ? 'Logging in…' : 'Please wait…')
+            : mode === 'login' ? 'Log in' : isFarmer ? 'Continue →' : 'Create Account'
+          }
         </Text>
       </TouchableOpacity>
 
@@ -312,7 +325,7 @@ function AuthScreen({ onComplete }) {
 export default function AccountScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { currentUser, signup, logout, registeredAnimals, registerAnimal, posts, notifications, unreadCount, markNotificationsRead, getFollowerCount, getFollowingCount, toggleFollow, isFollowing, getUserById } = useApp();
+  const { currentUser, login, signup, logout, registeredAnimals, registerAnimal, posts, notifications, unreadCount, markNotificationsRead, getFollowerCount, getFollowingCount, toggleFollow, isFollowing, getUserById, authLoading, authError, clearAuthError } = useApp();
   const [showAddAnimal, setShowAddAnimal] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [followingOpen, setFollowingOpen] = useState(false);
@@ -325,7 +338,13 @@ export default function AccountScreen() {
   if (!currentUser) {
     return (
       <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-        <AuthScreen onComplete={signup} />
+        <AuthScreen
+          onLogin={login}
+          onSignup={signup}
+          authLoading={authLoading}
+          authError={authError}
+          clearAuthError={clearAuthError}
+        />
       </SafeAreaView>
     );
   }
@@ -558,6 +577,10 @@ const styles = StyleSheet.create({
   farmerToggleSub: { fontSize: 13, color: C.textSec, lineHeight: 18 },
 
   stepHint: { fontSize: 13, color: C.textSec, textAlign: 'center', marginTop: 14 },
+  authError: {
+    fontSize: 14, color: C.red, textAlign: 'center', marginTop: 12,
+    backgroundColor: '#FFF0EE', borderRadius: 10, padding: 12, lineHeight: 20,
+  },
 
   backBtn: { marginBottom: 20 },
   backBtnText: { fontSize: 16, color: C.green, fontWeight: '700' },

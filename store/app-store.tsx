@@ -1,27 +1,8 @@
 // @ts-nocheck
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 
 export type Species = 'sheep' | 'cow' | 'goat' | 'pig' | 'horse' | 'dog' | 'cat' | 'chicken' | 'other';
-
-export const SEED_USERS = {
-  'user-sarah':   { id: 'user-sarah',   name: 'Sarah K.',         isFarmer: false },
-  'user-tom':     { id: 'user-tom',     name: 'Tom B.',           isFarmer: false },
-  'user-emma':    { id: 'user-emma',    name: 'Emma R.',          isFarmer: false },
-  'user-pete':    { id: 'user-pete',    name: 'Pete M.',          isFarmer: false },
-  'user-anna':    { id: 'user-anna',    name: 'Anna W.',          isFarmer: false },
-  'farmer-james': { id: 'farmer-james', name: 'James McGregor',   isFarmer: true, farmName: 'Highland Farm' },
-  'farmer-sue':   { id: 'farmer-sue',   name: 'Sue Patterson',    isFarmer: true, farmName: 'Cloverfield Ranch' },
-};
-
-const SEED_FOLLOW_GRAPH = {
-  'user-sarah':   ['user-tom', 'user-emma', 'farmer-james'],
-  'user-tom':     ['user-sarah', 'user-emma'],
-  'user-emma':    ['user-sarah', 'user-pete', 'farmer-james'],
-  'user-pete':    ['user-tom', 'user-sarah'],
-  'user-anna':    ['user-sarah', 'user-emma', 'user-tom', 'user-pete'],
-  'farmer-james': ['user-sarah', 'user-anna'],
-  'farmer-sue':   ['farmer-james'],
-};
 
 export interface User {
   id: string;
@@ -64,7 +45,7 @@ export interface Post {
   latitude?: number;
   longitude?: number;
   likes: string[];
-  confirmations: string[]; // userIds who confirmed "I've seen this too"
+  confirmations: string[];
   comments: Comment[];
   timestamp: number;
   isSighting: boolean;
@@ -86,195 +67,300 @@ export interface FarmerNotification {
   read: boolean;
 }
 
-const now = Date.now();
+// Keep as empty — real profiles come from Supabase
+export const SEED_USERS = {};
 
-const SEED_ANIMALS: RegisteredAnimal[] = [
-  {
-    id: 'a1',
-    ownerId: 'farmer-james',
-    ownerName: 'James McGregor',
-    farmName: 'Highland Farm',
-    species: 'sheep',
-    name: 'Dotty',
-    primaryColor: 'white',
-    markings: 'black spot on left ear, blue paint mark on back',
-    tagNumber: '42',
-  },
-  {
-    id: 'a2',
-    ownerId: 'farmer-james',
-    ownerName: 'James McGregor',
-    farmName: 'Highland Farm',
-    species: 'sheep',
-    name: 'Woolly',
-    primaryColor: 'cream',
-    markings: 'yellow ear tag #7, brown fleece on legs',
-    tagNumber: '7',
-  },
-  {
-    id: 'a3',
-    ownerId: 'farmer-james',
-    ownerName: 'James McGregor',
-    farmName: 'Highland Farm',
-    species: 'goat',
-    name: 'Billy',
-    primaryColor: 'brown',
-    markings: 'white beard, red collar with small bell',
-  },
-  {
-    id: 'a4',
-    ownerId: 'farmer-sue',
-    ownerName: 'Sue Patterson',
-    farmName: 'Cloverfield Ranch',
-    species: 'cow',
-    name: 'Bessie',
-    primaryColor: 'black and white',
-    markings: 'classic holstein pattern, notched right ear',
-    tagNumber: '101',
-  },
-];
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-const SEED_POSTS: Post[] = [
-  {
-    id: 'p1',
-    userId: 'user-sarah',
-    userName: 'Sarah K.',
-    caption: 'Found this little one wandering by the main road! Anyone know who she belongs to? Very friendly 🐑',
-    species: 'sheep',
-    primaryColor: 'white',
-    markings: 'black spot on ear',
-    locationLabel: 'Millbrook Road, 2km north of town',
-    likes: ['user-tom', 'user-emma'],
-    comments: [
-      { id: 'c1', userId: 'user-tom', userName: 'Tom B.', text: 'Aww poor thing! Hope she gets home safe 🐑', timestamp: now - 3000000 },
-    ],
-    confirmations: ['user-pete', 'user-anna'],
-    timestamp: now - 7200000,
-    isSighting: true,
-    sightingStatus: 'open',
-  },
-  {
-    id: 'p2',
-    userId: 'user-tom',
-    userName: 'Tom B.',
-    caption: "My neighbor's cows visited my garden this morning 😂 Ate half my roses but honestly they're too cute",
-    species: 'cow',
-    locationLabel: 'Greenfield Village',
-    confirmations: [],
-    likes: ['user-sarah', 'user-emma', 'user-pete', 'user-anna'],
-    comments: [],
-    timestamp: now - 86400000,
-    isSighting: false,
-  },
-  {
-    id: 'p3',
-    userId: 'user-emma',
-    userName: 'Emma R.',
-    caption: 'This fluffy highland cow walked up to my car window and stared at me for a full minute. Made my week 🐄❤️',
-    species: 'cow',
-    locationLabel: 'Highland Trail, near the old mill',
-    confirmations: [],
-    likes: ['user-tom', 'user-sarah', 'user-pete'],
-    comments: [
-      { id: 'c2', userId: 'user-pete', userName: 'Pete M.', text: "That's Hamish from the farm on the hill! Totally harmless, very nosy 😄", timestamp: now - 168000000 },
-      { id: 'c3', userId: 'user-emma', userName: 'Emma R.', text: 'Hamish!! I love him', timestamp: now - 165000000 },
-    ],
-    timestamp: now - 172800000,
-    isSighting: false,
-  },
-  {
-    id: 'p4',
-    userId: 'user-pete',
-    userName: 'Pete M.',
-    caption: 'Spotted three goats trotting along the B7024 this morning. Looked healthy but definitely not meant to be there!',
-    species: 'goat',
-    primaryColor: 'brown',
-    markings: 'white patches, two had ear tags',
-    locationLabel: 'B7024, opposite the petrol station',
-    confirmations: ['user-sarah', 'user-tom'],
-    likes: ['user-anna'],
-    comments: [],
-    timestamp: now - 259200000,
-    isSighting: true,
-    sightingStatus: 'resolved',
-  },
-  {
-    id: 'p5',
-    userId: 'user-anna',
-    userName: 'Anna W.',
-    caption: 'The lambs at the farm down the road had babies last week! Absolute tiny fluffy perfection 🌿',
-    species: 'sheep',
-    locationLabel: 'Green Lane Farm',
-    confirmations: [],
-    likes: ['user-tom', 'user-emma', 'user-sarah', 'user-pete'],
-    comments: [
-      { id: 'c4', userId: 'user-sarah', userName: 'Sarah K.', text: 'I NEED to visit them 😭', timestamp: now - 430000000 },
-    ],
-    timestamp: now - 432000000,
-    isSighting: false,
-  },
-];
+function transformPost(row): Post {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    userName: row.profiles?.name ?? 'Unknown',
+    photo: row.photo_url ?? undefined,
+    caption: row.caption ?? '',
+    species: row.species,
+    primaryColor: row.primary_color,
+    markings: row.markings,
+    locationLabel: row.location_label,
+    latitude: row.latitude,
+    longitude: row.longitude,
+    likes: (row.likes ?? []).map(l => l.user_id),
+    confirmations: (row.confirmations ?? []).map(c => c.user_id),
+    comments: (row.comments ?? [])
+      .map(c => ({
+        id: c.id,
+        userId: c.user_id,
+        userName: c.user_name,
+        text: c.text,
+        timestamp: new Date(c.created_at).getTime(),
+      }))
+      .sort((a, b) => a.timestamp - b.timestamp),
+    timestamp: new Date(row.created_at).getTime(),
+    isSighting: row.is_sighting,
+    sightingStatus: row.sighting_status,
+  };
+}
+
+async function uploadPhoto(localUri: string): Promise<string | null> {
+  try {
+    const ext = localUri.split('.').pop()?.toLowerCase() ?? 'jpg';
+    const path = `${Date.now()}.${ext}`;
+    const response = await fetch(localUri);
+    const blob = await response.blob();
+    const { data, error } = await supabase.storage.from('photos').upload(path, blob, {
+      contentType: `image/${ext === 'jpg' ? 'jpeg' : ext}`,
+      upsert: false,
+    });
+    if (error) { console.warn('Photo upload error:', error.message); return null; }
+    const { data: { publicUrl } } = supabase.storage.from('photos').getPublicUrl(data.path);
+    return publicUrl;
+  } catch (e) {
+    console.warn('Photo upload failed:', e);
+    return null;
+  }
+}
+
+// ── Context ───────────────────────────────────────────────────────────────────
 
 const AppContext = createContext(null);
 
 export function AppProvider({ children }) {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [posts, setPosts] = useState(SEED_POSTS);
-  const [registeredAnimals, setRegisteredAnimals] = useState(SEED_ANIMALS);
-  const [notifications, setNotifications] = useState([]);
-  const [followGraph, setFollowGraph] = useState(SEED_FOLLOW_GRAPH);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [registeredAnimals, setRegisteredAnimals] = useState<RegisteredAnimal[]>([]);
+  const [notifications, setNotifications] = useState<FarmerNotification[]>([]);
+  const [followGraph, setFollowGraph] = useState<{ [uid: string]: string[] }>({});
+  const [profilesCache, setProfilesCache] = useState<{ [uid: string]: User }>({});
+  const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
-  const login = (name, email, isFarmer, farmName) => {
-    setCurrentUser({
-      id: `user-${name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
-      name,
-      email,
-      isFarmer,
-      farmName,
+  // ── Initial load ────────────────────────────────────────────────────────────
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        loadProfile(session.user.id).finally(() => setLoading(false));
+      } else {
+        setLoading(false);
+      }
     });
-  };
 
-  const logout = () => setCurrentUser(null);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        await loadProfile(session.user.id);
+      } else if (event === 'SIGNED_OUT') {
+        setCurrentUser(null);
+        setNotifications([]);
+      }
+    });
 
-  const signup = (name, email, isFarmer, farmName, animals) => {
-    const userId = `user-${name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
-    const user = { id: userId, name, email, isFarmer, farmName };
-    setCurrentUser(user);
-    if (isFarmer && animals?.length) {
-      const newAnimals = animals.map((a, i) => ({
-        ...a,
-        id: `a-signup-${Date.now()}-${i}`,
-        ownerId: userId,
-        ownerName: name,
-        farmName,
-      }));
-      setRegisteredAnimals(prev => [...prev, ...newAnimals]);
+    loadPosts();
+    loadAnimals();
+    loadFollowGraph();
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Re-load notifications when currentUser changes
+  useEffect(() => {
+    if (currentUser?.isFarmer) loadNotifications(currentUser.id);
+  }, [currentUser?.id]);
+
+  // ── Loaders ─────────────────────────────────────────────────────────────────
+
+  const loadProfile = async (userId: string) => {
+    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
+    if (data) {
+      const user: User = {
+        id: data.id,
+        name: data.name,
+        email: '',
+        isFarmer: data.is_farmer,
+        farmName: data.farm_name,
+      };
+      setCurrentUser(user);
+      setProfilesCache(prev => ({ ...prev, [data.id]: user }));
     }
   };
 
-  const submitSighting = (data) => {
+  const loadPosts = async () => {
+    const { data, error } = await supabase
+      .from('posts')
+      .select(`
+        *,
+        profiles!posts_user_id_fkey(name),
+        likes(user_id),
+        confirmations(user_id),
+        comments(id, user_id, user_name, text, created_at)
+      `)
+      .order('created_at', { ascending: false })
+      .limit(100);
+    if (!error && data) {
+      setPosts(data.map(transformPost));
+      // Populate profiles cache from post authors
+      const cache = {};
+      data.forEach(row => {
+        if (row.user_id && row.profiles?.name) {
+          cache[row.user_id] = { id: row.user_id, name: row.profiles.name, isFarmer: false, email: '' };
+        }
+      });
+      setProfilesCache(prev => ({ ...prev, ...cache }));
+    }
+  };
+
+  const loadAnimals = async () => {
+    const { data } = await supabase
+      .from('animals')
+      .select('*, profiles!animals_owner_id_fkey(name, farm_name)');
+    if (data) {
+      setRegisteredAnimals(data.map(a => ({
+        id: a.id,
+        ownerId: a.owner_id,
+        ownerName: a.profiles?.name ?? 'Unknown',
+        farmName: a.profiles?.farm_name,
+        species: a.species,
+        name: a.name,
+        primaryColor: a.primary_color,
+        markings: a.markings,
+        tagNumber: a.tag_number,
+      })));
+    }
+  };
+
+  const loadFollowGraph = async () => {
+    const { data } = await supabase.from('follows').select('follower_id, following_id');
+    if (data) {
+      const graph: { [uid: string]: string[] } = {};
+      data.forEach(({ follower_id, following_id }) => {
+        if (!graph[follower_id]) graph[follower_id] = [];
+        graph[follower_id].push(following_id);
+      });
+      setFollowGraph(graph);
+    }
+  };
+
+  const loadNotifications = async (userId: string) => {
+    const { data } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('farmer_id', userId)
+      .order('created_at', { ascending: false });
+    if (data) {
+      setNotifications(data.map(n => ({
+        id: n.id,
+        farmerId: n.farmer_id,
+        animalId: n.animal_id,
+        animalName: n.animal_name,
+        species: n.species,
+        reporterName: n.reporter_name,
+        reporterCaption: n.reporter_caption,
+        locationLabel: n.location_label,
+        latitude: n.latitude,
+        longitude: n.longitude,
+        timestamp: new Date(n.created_at).getTime(),
+        read: n.read,
+      })));
+    }
+  };
+
+  // ── Auth ────────────────────────────────────────────────────────────────────
+
+  const login = async (email: string, password: string) => {
+    setAuthLoading(true);
+    setAuthError(null);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) setAuthError(error.message);
+    setAuthLoading(false);
+  };
+
+  const signup = async (
+    name: string,
+    email: string,
+    password: string,
+    isFarmer: boolean,
+    farmName: string | undefined,
+    animals: Omit<RegisteredAnimal, 'id' | 'ownerId' | 'ownerName' | 'farmName'>[]
+  ) => {
+    setAuthLoading(true);
+    setAuthError(null);
+
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) { setAuthError(error.message); setAuthLoading(false); return; }
+
+    const userId = data.user?.id;
+    if (!userId) { setAuthError('Signup failed. Please try again.'); setAuthLoading(false); return; }
+
+    // Create profile
+    const { error: profileError } = await supabase.from('profiles').insert({
+      id: userId, name, is_farmer: isFarmer, farm_name: farmName ?? null,
+    });
+    if (profileError) { setAuthError(profileError.message); setAuthLoading(false); return; }
+
+    // Register animals if farmer
+    if (isFarmer && animals?.length) {
+      await supabase.from('animals').insert(
+        animals.map(a => ({
+          owner_id: userId,
+          species: a.species,
+          name: a.name,
+          primary_color: a.primaryColor,
+          markings: a.markings || null,
+          tag_number: a.tagNumber || null,
+        }))
+      );
+      await loadAnimals();
+    }
+
+    // Set user manually (onAuthStateChange may lag)
+    const user: User = { id: userId, name, email, isFarmer, farmName };
+    setCurrentUser(user);
+    setAuthLoading(false);
+  };
+
+  const logout = async () => {
+    await supabase.auth.signOut();
+  };
+
+  const clearAuthError = () => setAuthError(null);
+
+  // ── Posts ───────────────────────────────────────────────────────────────────
+
+  const submitSighting = async (data) => {
     const user = currentUser ?? { id: 'guest', name: 'Anonymous' };
-    const newPost = {
-      id: `post-${Date.now()}`,
-      userId: user.id,
-      userName: user.name,
-      photo: data.photo,
-      caption: data.caption || `Spotted a ${SPECIES_LIST.find(s => s.value === data.species)?.label ?? data.species} near ${data.locationLabel ?? 'unknown location'}`,
-      species: data.species,
-      primaryColor: data.primaryColor,
-      markings: data.markings,
-      locationLabel: data.locationLabel,
-      latitude: data.latitude,
-      longitude: data.longitude,
-      confirmations: [],
-      likes: [],
-      comments: [],
-      timestamp: Date.now(),
-      isSighting: true,
-      sightingStatus: 'open',
-    };
+
+    // Upload photo first if present
+    let photoUrl: string | null = null;
+    if (data.photo && !data.photo.startsWith('http')) {
+      photoUrl = await uploadPhoto(data.photo);
+    }
+
+    const caption = data.caption || `Spotted a ${SPECIES_LIST.find(s => s.value === data.species)?.label ?? data.species} near ${data.locationLabel ?? 'unknown location'}`;
+
+    const { data: row, error } = await supabase
+      .from('posts')
+      .insert({
+        user_id: user.id,
+        caption,
+        species: data.species,
+        primary_color: data.primaryColor,
+        markings: data.markings || null,
+        location_label: data.locationLabel || null,
+        latitude: data.latitude ?? null,
+        longitude: data.longitude ?? null,
+        photo_url: photoUrl,
+        is_sighting: true,
+        sighting_status: 'open',
+      })
+      .select('*, profiles!posts_user_id_fkey(name)')
+      .single();
+
+    if (error) { console.warn('submitSighting error:', error.message); return []; }
+
+    const newPost = transformPost({ ...row, likes: [], confirmations: [], comments: [] });
     setPosts(prev => [newPost, ...prev]);
 
+    // Match against registered animals
     const matches = registeredAnimals.filter(animal => {
       if (animal.species !== data.species) return false;
       const rc = (data.primaryColor || '').toLowerCase();
@@ -282,113 +368,206 @@ export function AppProvider({ children }) {
       return rc.includes(ac) || ac.includes(rc) || rc.split(/\s+/).some(w => w.length > 2 && ac.includes(w));
     });
 
+    // Create notifications for matched farmers
     if (matches.length > 0) {
-      const newNotifs = matches.map(animal => ({
-        id: `notif-${Date.now()}-${animal.id}`,
-        farmerId: animal.ownerId,
-        animalId: animal.id,
-        animalName: animal.name,
-        species: animal.species,
-        reporterName: user.name,
-        reporterCaption: newPost.caption,
-        locationLabel: data.locationLabel,
-        latitude: data.latitude,
-        longitude: data.longitude,
-        timestamp: Date.now(),
-        read: false,
-      }));
-      setNotifications(prev => [...newNotifs, ...prev]);
+      await supabase.from('notifications').insert(
+        matches.map(animal => ({
+          farmer_id: animal.ownerId,
+          post_id: row.id,
+          animal_id: animal.id,
+          animal_name: animal.name,
+          species: animal.species,
+          reporter_name: user.name,
+          reporter_caption: caption,
+          location_label: data.locationLabel || null,
+          latitude: data.latitude ?? null,
+          longitude: data.longitude ?? null,
+        }))
+      );
+      // If the current user is a farmer who matched, refresh their notifications
+      if (currentUser?.isFarmer) loadNotifications(currentUser.id);
     }
 
     return matches;
   };
 
-  const addCommunityPost = (data) => {
+  const addCommunityPost = async (data) => {
     const user = currentUser ?? { id: 'guest', name: 'Anonymous' };
-    setPosts(prev => [{
-      id: `post-${Date.now()}`,
+
+    let photoUrl: string | null = null;
+    if (data.photo && !data.photo.startsWith('http')) {
+      photoUrl = await uploadPhoto(data.photo);
+    }
+
+    const { data: row, error } = await supabase
+      .from('posts')
+      .insert({
+        user_id: user.id,
+        caption: data.caption,
+        species: data.species || null,
+        location_label: data.locationLabel || null,
+        photo_url: photoUrl,
+        is_sighting: false,
+        sighting_status: 'open',
+      })
+      .select('*, profiles!posts_user_id_fkey(name)')
+      .single();
+
+    if (error) { console.warn('addCommunityPost error:', error.message); return; }
+
+    const newPost = transformPost({ ...row, likes: [], confirmations: [], comments: [] });
+    setPosts(prev => [newPost, ...prev]);
+  };
+
+  // ── Interactions (optimistic) ────────────────────────────────────────────────
+
+  const toggleLike = async (postId: string) => {
+    const userId = currentUser?.id ?? 'guest';
+    const post = posts.find(p => p.id === postId);
+    if (!post) return;
+    const alreadyLiked = post.likes.includes(userId);
+
+    // Optimistic update
+    setPosts(prev => prev.map(p =>
+      p.id !== postId ? p : {
+        ...p, likes: alreadyLiked ? p.likes.filter(id => id !== userId) : [...p.likes, userId],
+      }
+    ));
+
+    if (alreadyLiked) {
+      await supabase.from('likes').delete().match({ user_id: userId, post_id: postId });
+    } else {
+      await supabase.from('likes').insert({ user_id: userId, post_id: postId });
+    }
+  };
+
+  const addComment = async (postId: string, text: string) => {
+    const user = currentUser ?? { id: 'guest', name: 'You' };
+    const comment: Comment = {
+      id: `temp-${Date.now()}`,
       userId: user.id,
       userName: user.name,
-      photo: data.photo,
-      caption: data.caption,
-      species: data.species,
-      locationLabel: data.locationLabel,
-      confirmations: [],
-      likes: [],
-      comments: [],
+      text,
       timestamp: Date.now(),
-      isSighting: false,
-    }, ...prev]);
+    };
+
+    // Optimistic update
+    setPosts(prev => prev.map(p =>
+      p.id === postId ? { ...p, comments: [...p.comments, comment] } : p
+    ));
+
+    const { data } = await supabase.from('comments').insert({
+      post_id: postId,
+      user_id: user.id,
+      user_name: user.name,
+      text,
+    }).select('id').single();
+
+    // Replace temp id with real id
+    if (data) {
+      setPosts(prev => prev.map(p =>
+        p.id === postId ? {
+          ...p,
+          comments: p.comments.map(c => c.id === comment.id ? { ...c, id: data.id } : c),
+        } : p
+      ));
+    }
   };
 
-  const toggleLike = (postId) => {
+  const toggleConfirmation = async (postId: string) => {
     const userId = currentUser?.id ?? 'guest';
-    setPosts(prev => prev.map(p => {
-      if (p.id !== postId) return p;
-      const liked = p.likes.includes(userId);
-      return { ...p, likes: liked ? p.likes.filter(id => id !== userId) : [...p.likes, userId] };
-    }));
+    const post = posts.find(p => p.id === postId);
+    if (!post) return;
+    const has = post.confirmations.includes(userId);
+
+    setPosts(prev => prev.map(p =>
+      p.id !== postId ? p : {
+        ...p, confirmations: has ? p.confirmations.filter(id => id !== userId) : [...p.confirmations, userId],
+      }
+    ));
+
+    if (has) {
+      await supabase.from('confirmations').delete().match({ user_id: userId, post_id: postId });
+    } else {
+      await supabase.from('confirmations').insert({ user_id: userId, post_id: postId });
+    }
   };
 
-  const addComment = (postId, text) => {
-    const user = currentUser ?? { id: 'guest', name: 'You' };
-    const comment = { id: `c-${Date.now()}`, userId: user.id, userName: user.name, text, timestamp: Date.now() };
-    setPosts(prev => prev.map(p => p.id === postId ? { ...p, comments: [...p.comments, comment] } : p));
+  const markReunited = async (postId: string) => {
+    setPosts(prev => prev.map(p =>
+      p.id === postId ? { ...p, sightingStatus: 'resolved' } : p
+    ));
+    await supabase.from('posts').update({ sighting_status: 'resolved' }).eq('id', postId);
   };
 
-  const registerAnimal = (data) => {
+  const registerAnimal = async (data) => {
     if (!currentUser?.isFarmer) return;
-    setRegisteredAnimals(prev => [...prev, {
-      id: `a-${Date.now()}`,
-      ownerId: currentUser.id,
-      ownerName: currentUser.name,
-      farmName: currentUser.farmName,
-      ...data,
-    }]);
+    const { data: row } = await supabase.from('animals').insert({
+      owner_id: currentUser.id,
+      species: data.species,
+      name: data.name,
+      primary_color: data.primaryColor,
+      markings: data.markings || null,
+      tag_number: data.tagNumber || null,
+    }).select().single();
+
+    if (row) {
+      setRegisteredAnimals(prev => [...prev, {
+        id: row.id,
+        ownerId: currentUser.id,
+        ownerName: currentUser.name,
+        farmName: currentUser.farmName,
+        species: row.species,
+        name: row.name,
+        primaryColor: row.primary_color,
+        markings: row.markings,
+        tagNumber: row.tag_number,
+      }]);
+    }
   };
 
-  const toggleFollow = (targetId) => {
+  // ── Follows ──────────────────────────────────────────────────────────────────
+
+  const toggleFollow = async (targetId: string) => {
     if (!currentUser) return;
-    setFollowGraph(prev => {
-      const mine = prev[currentUser.id] ?? [];
-      const already = mine.includes(targetId);
-      return { ...prev, [currentUser.id]: already ? mine.filter(id => id !== targetId) : [...mine, targetId] };
-    });
+    const mine = followGraph[currentUser.id] ?? [];
+    const already = mine.includes(targetId);
+
+    setFollowGraph(prev => ({
+      ...prev,
+      [currentUser.id]: already ? mine.filter(id => id !== targetId) : [...mine, targetId],
+    }));
+
+    if (already) {
+      await supabase.from('follows').delete().match({ follower_id: currentUser.id, following_id: targetId });
+    } else {
+      await supabase.from('follows').insert({ follower_id: currentUser.id, following_id: targetId });
+    }
   };
 
-  const isFollowing = (targetId) => {
+  const isFollowing = (targetId: string) => {
     if (!currentUser) return false;
     return (followGraph[currentUser.id] ?? []).includes(targetId);
   };
 
-  const getFollowerCount = (userId) =>
+  const getFollowerCount = (userId: string) =>
     Object.values(followGraph).filter(arr => arr.includes(userId)).length;
 
-  const getFollowingCount = (userId) =>
+  const getFollowingCount = (userId: string) =>
     (followGraph[userId] ?? []).length;
 
-  const getUserById = (userId) => {
+  const getUserById = (userId: string): User | null => {
     if (currentUser?.id === userId) return currentUser;
-    return SEED_USERS[userId] ?? null;
+    return profilesCache[userId] ?? null;
   };
 
-  const toggleConfirmation = (postId) => {
-    const userId = currentUser?.id ?? 'guest';
-    setPosts(prev => prev.map(p => {
-      if (p.id !== postId) return p;
-      const has = p.confirmations.includes(userId);
-      return { ...p, confirmations: has ? p.confirmations.filter(id => id !== userId) : [...p.confirmations, userId] };
-    }));
-  };
+  // ── Notifications ────────────────────────────────────────────────────────────
 
-  const markReunited = (postId) => {
-    setPosts(prev => prev.map(p =>
-      p.id === postId ? { ...p, sightingStatus: 'resolved' } : p
-    ));
-  };
-
-  const markNotificationsRead = () => {
+  const markNotificationsRead = async () => {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    if (currentUser) {
+      await supabase.from('notifications').update({ read: true }).eq('farmer_id', currentUser.id);
+    }
   };
 
   const myNotifications = notifications.filter(n => n.farmerId === currentUser?.id);
@@ -396,10 +575,15 @@ export function AppProvider({ children }) {
 
   return (
     <AppContext.Provider value={{
-      currentUser, posts, registeredAnimals, notifications: myNotifications, unreadCount,
-      login, logout, signup, submitSighting, addCommunityPost,
-      toggleLike, addComment, registerAnimal, toggleConfirmation, markReunited, markNotificationsRead,
+      currentUser, posts, registeredAnimals,
+      notifications: myNotifications, unreadCount,
+      loading, authLoading, authError, clearAuthError,
+      login, logout, signup,
+      submitSighting, addCommunityPost,
+      toggleLike, addComment, toggleConfirmation, markReunited, registerAnimal,
       toggleFollow, isFollowing, getFollowerCount, getFollowingCount, getUserById,
+      markNotificationsRead,
+      refreshPosts: loadPosts,
     }}>
       {children}
     </AppContext.Provider>
@@ -424,7 +608,7 @@ export const SPECIES_LIST = [
   { value: 'other',   label: 'Other',   emoji: '🐾' },
 ];
 
-export function timeAgo(timestamp) {
+export function timeAgo(timestamp: number): string {
   const s = Math.floor((Date.now() - timestamp) / 1000);
   if (s < 60) return 'just now';
   const m = Math.floor(s / 60);
