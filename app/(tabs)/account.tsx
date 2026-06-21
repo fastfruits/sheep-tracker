@@ -5,7 +5,8 @@ import {
   TouchableOpacity, Switch, Alert,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useApp, SPECIES_LIST, timeAgo } from '@/store/app-store';
+import { useRouter } from 'expo-router';
+import { useApp, SPECIES_LIST, SEED_USERS, timeAgo } from '@/store/app-store';
 
 const C = {
   bg: '#F7F6F2',
@@ -22,6 +23,57 @@ const C = {
   amberBorder: '#FDE68A',
   orange: '#E8531F',
 };
+
+// ─── Following list ──────────────────────────────────────────────────────────
+function stringToColor(str) {
+  const colors = ['#2E7D32', '#1565C0', '#6A1B9A', '#AD1457', '#00695C', '#E65100'];
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = str.charCodeAt(i) + ((h << 5) - h);
+  return colors[Math.abs(h) % colors.length];
+}
+
+function FollowingList({ currentUser, posts, isFollowing, toggleFollow, getUserById, onViewProfile }) {
+  // Derive unique userIds from posts (community of known users)
+  const allUserIds = [...new Set(posts.map(p => p.userId))].filter(id => id !== currentUser?.id);
+  const knownUsers = allUserIds.map(id => getUserById(id) ?? { id, name: id, isFarmer: false }).filter(Boolean);
+
+  if (knownUsers.length === 0) return null;
+
+  return (
+    <View style={styles.followingSection}>
+      <Text style={styles.followingTitle}>People you might know</Text>
+      {knownUsers.map(user => {
+        const following = isFollowing(user.id);
+        return (
+          <View key={user.id} style={styles.followRow}>
+            <TouchableOpacity
+              style={styles.followRowLeft}
+              onPress={() => onViewProfile(user.id)}
+              activeOpacity={0.75}
+            >
+              <View style={[styles.followAvatar, { backgroundColor: stringToColor(user.name) }]}>
+                <Text style={styles.followAvatarText}>{user.name.charAt(0)}</Text>
+              </View>
+              <View>
+                <Text style={styles.followName}>{user.name}</Text>
+                {user.isFarmer && <Text style={styles.followFarmer}>🌾 {user.farmName ?? 'Farmer'}</Text>}
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.followBtn, following && styles.followBtnActive]}
+              onPress={() => toggleFollow(user.id)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.followBtnText, following && styles.followBtnTextActive]}>
+                {following ? 'Following' : 'Follow'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
 
 // ─── Animal row in farmer signup ─────────────────────────────────────────────
 function AnimalSignupCard({ animal, onRemove }) {
@@ -259,12 +311,16 @@ function AuthScreen({ onComplete }) {
 // ─── Main screen ─────────────────────────────────────────────────────────────
 export default function AccountScreen() {
   const insets = useSafeAreaInsets();
-  const { currentUser, signup, logout, registeredAnimals, registerAnimal, posts, notifications, unreadCount, markNotificationsRead } = useApp();
+  const router = useRouter();
+  const { currentUser, signup, logout, registeredAnimals, registerAnimal, posts, notifications, unreadCount, markNotificationsRead, getFollowerCount, getFollowingCount, toggleFollow, isFollowing, getUserById } = useApp();
   const [showAddAnimal, setShowAddAnimal] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [followingOpen, setFollowingOpen] = useState(false);
 
   const myAnimals = registeredAnimals.filter(a => a.ownerId === currentUser?.id);
   const myPosts = posts.filter(p => p.userId === currentUser?.id);
+  const followerCount = currentUser ? getFollowerCount(currentUser.id) : 0;
+  const followingCount = currentUser ? getFollowingCount(currentUser.id) : 0;
 
   if (!currentUser) {
     return (
@@ -311,20 +367,30 @@ export default function AccountScreen() {
         {/* Stats */}
         <View style={styles.statsRow}>
           <View style={styles.statBox}>
-            <Text style={styles.statNum}>{myPosts.filter(p => p.isSighting).length}</Text>
-            <Text style={styles.statLabel}>Reports</Text>
+            <Text style={styles.statNum}>{myPosts.length}</Text>
+            <Text style={styles.statLabel}>Posts</Text>
           </View>
-          <View style={[styles.statBox, styles.statMid]}>
-            <Text style={styles.statNum}>{myPosts.filter(p => !p.isSighting).length}</Text>
-            <Text style={styles.statLabel}>Shared</Text>
-          </View>
-          {currentUser.isFarmer && (
-            <View style={styles.statBox}>
-              <Text style={styles.statNum}>{myAnimals.length}</Text>
-              <Text style={styles.statLabel}>Animals</Text>
-            </View>
-          )}
+          <TouchableOpacity style={[styles.statBox, styles.statMid]} onPress={() => setFollowingOpen(v => !v)} activeOpacity={0.75}>
+            <Text style={styles.statNum}>{followerCount}</Text>
+            <Text style={styles.statLabel}>Followers</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.statBox} onPress={() => setFollowingOpen(v => !v)} activeOpacity={0.75}>
+            <Text style={styles.statNum}>{followingCount}</Text>
+            <Text style={styles.statLabel}>Following</Text>
+          </TouchableOpacity>
         </View>
+
+        {/* Following list */}
+        {followingOpen && (
+          <FollowingList
+            currentUser={currentUser}
+            posts={posts}
+            isFollowing={isFollowing}
+            toggleFollow={toggleFollow}
+            getUserById={getUserById}
+            onViewProfile={uid => router.push(`/profile/${uid}`)}
+          />
+        )}
 
         {/* Farmer alerts */}
         {currentUser.isFarmer && notifications.length > 0 && !notifOpen && (
@@ -628,6 +694,33 @@ const styles = StyleSheet.create({
     alignItems: 'center', borderWidth: 1.5, borderColor: '#F0D0D0', marginTop: 4,
   },
   signOutText: { color: C.red, fontSize: 16, fontWeight: '700' },
+
+  followingSection: {
+    backgroundColor: C.card, borderRadius: 16, borderWidth: 1,
+    borderColor: C.border, marginBottom: 20, overflow: 'hidden',
+  },
+  followingTitle: {
+    fontSize: 13, fontWeight: '700', color: C.textSec, letterSpacing: 0.4,
+    textTransform: 'uppercase', padding: 14, paddingBottom: 10,
+    borderBottomWidth: 1, borderBottomColor: C.border,
+  },
+  followRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 14, paddingVertical: 12,
+    borderBottomWidth: 1, borderBottomColor: C.border,
+  },
+  followRowLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+  followAvatar: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  followAvatarText: { color: '#FFF', fontWeight: '800', fontSize: 16 },
+  followName: { fontSize: 15, fontWeight: '700', color: C.text },
+  followFarmer: { fontSize: 12, color: C.green, fontWeight: '600' },
+  followBtn: {
+    paddingHorizontal: 18, paddingVertical: 8, borderRadius: 100,
+    backgroundColor: C.green,
+  },
+  followBtnActive: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: C.border },
+  followBtnText: { fontSize: 13, fontWeight: '800', color: '#FFF' },
+  followBtnTextActive: { color: C.textSec },
 });
 
 // need Platform import for monospace font
