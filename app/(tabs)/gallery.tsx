@@ -513,7 +513,7 @@ const styles = StyleSheet.create({
   filterRow: { paddingHorizontal: 16, paddingBottom: 10, gap: 8 },
   filterPill: {
     paddingHorizontal: 16, paddingVertical: 8, borderRadius: 100,
-    backgroundColor: C.card, borderWidth: 1.5, borderColor: C.border,
+    backgroundColor: C.card, borderWidth: 1.5, borderColor: C.border, flexShrink: 0,
   },
   filterPillActive: { backgroundColor: C.green, borderColor: C.green },
   filterText: { fontSize: 14, fontWeight: '600', color: C.textSec },
@@ -627,11 +627,11 @@ const styles = StyleSheet.create({
   },
   inputMulti: { height: 100, textAlignVertical: 'top' },
   label: { fontSize: 13, fontWeight: '700', color: C.textSec, letterSpacing: 0.4, textTransform: 'uppercase', marginTop: 4 },
-  pillRow: { gap: 8, paddingBottom: 4 },
+  pillRow: { gap: 8, paddingBottom: 4, alignItems: 'center' },
   pill: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: 14, paddingVertical: 10, borderRadius: 100,
-    backgroundColor: C.card, borderWidth: 1.5, borderColor: C.border,
+    backgroundColor: C.card, borderWidth: 1.5, borderColor: C.border, flexShrink: 0,
   },
   pillActive: { backgroundColor: C.green, borderColor: C.green },
   pillEmoji: { fontSize: 17 },

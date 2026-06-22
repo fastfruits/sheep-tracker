@@ -1,5 +1,3 @@
--- Run this entire file in the Supabase SQL editor (supabase.com → your project → SQL Editor)
-
 -- ── Profiles (extends Supabase auth.users) ──────────────────────────────────
 create table if not exists profiles (
   id          uuid references auth.users(id) on delete cascade primary key,

@@ -291,6 +291,25 @@ export function AppProvider({ children }) {
     const userId = data.user?.id;
     if (!userId) { setAuthError('Signup failed. Please try again.'); setAuthLoading(false); return; }
 
+    // If no session, email confirmation is required — profile is still saved so it's ready after confirm
+    if (!data.session) {
+      // Still create the profile so it's there when they confirm
+      await supabase.from('profiles').insert({
+        id: userId, name, is_farmer: isFarmer, farm_name: farmName ?? null,
+      });
+      if (isFarmer && animals?.length) {
+        await supabase.from('animals').insert(
+          animals.map(a => ({
+            owner_id: userId, species: a.species, name: a.name,
+            primary_color: a.primaryColor, markings: a.markings || null, tag_number: a.tagNumber || null,
+          }))
+        );
+      }
+      setAuthError('📧 Check your email to confirm your account — then log in here.\n\nTo skip this step: in your Supabase dashboard go to Auth → Providers → Email and disable "Confirm email".');
+      setAuthLoading(false);
+      return;
+    }
+
     // Create profile
     const { error: profileError } = await supabase.from('profiles').insert({
       id: userId, name, is_farmer: isFarmer, farm_name: farmName ?? null,
@@ -312,9 +331,8 @@ export function AppProvider({ children }) {
       await loadAnimals();
     }
 
-    // Set user manually (onAuthStateChange may lag)
-    const user: User = { id: userId, name, email, isFarmer, farmName };
-    setCurrentUser(user);
+    // Load profile from DB to get the authoritative isFarmer value
+    await loadProfile(userId);
     setAuthLoading(false);
   };
 
