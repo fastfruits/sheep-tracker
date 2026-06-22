@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
 
   photoBox: {
     width: '100%', height: 210, borderRadius: 16, overflow: 'hidden',
-    backgroundColor: C.card, borderWidth: 1.5, borderColor: C.border,
+    backgroundColor: C.card, borderWidth: 1.5, borderColor: C.border, flexShrink: 0,
     borderStyle: 'dashed', marginBottom: 24,
   },
   photoImg: { width: '100%', height: '100%' },
@@ -282,11 +282,11 @@ const styles = StyleSheet.create({
   label: { fontSize: 13, fontWeight: '700', color: C.textSec, letterSpacing: 0.4, textTransform: 'uppercase', marginBottom: 10, marginTop: 18 },
   req: { color: C.red },
 
-  pillRow: { gap: 8, paddingBottom: 4 },
+  pillRow: { gap: 8, paddingBottom: 4, alignItems: 'center' },
   pill: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: 14, paddingVertical: 10, borderRadius: 100,
-    backgroundColor: C.card, borderWidth: 1.5, borderColor: C.border,
+    backgroundColor: C.card, borderWidth: 1.5, borderColor: C.border, flexShrink: 0,
   },
   pillActive: { backgroundColor: C.green, borderColor: C.green },
   pillEmoji: { fontSize: 17 },

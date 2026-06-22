@@ -593,11 +593,12 @@ const styles = StyleSheet.create({
   },
   addAnimalTitle: { fontSize: 16, fontWeight: '800', color: C.text, marginBottom: 12 },
 
-  pillRow: { gap: 8, paddingBottom: 4 },
+  pillRow: { gap: 8, paddingBottom: 4, alignItems: 'center' },
   pill: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: 14, paddingVertical: 10, borderRadius: 100,
     backgroundColor: C.bg, borderWidth: 1.5, borderColor: C.border,
+    flexShrink: 0,
   },
   pillActive: { backgroundColor: C.green, borderColor: C.green },
   pillEmoji: { fontSize: 17 },
