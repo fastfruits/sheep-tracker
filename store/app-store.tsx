@@ -1,6 +1,12 @@
 // @ts-nocheck
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import {
+  registerForPushNotificationsAsync,
+  sendExpoPushNotifications,
+  scheduleReengagementNotification,
+  cancelReengagementNotification,
+} from '@/lib/pushNotifications';
 
 export type Species = 'sheep' | 'cow' | 'goat' | 'pig' | 'horse' | 'dog' | 'cat' | 'chicken' | 'other';
 
@@ -181,6 +187,14 @@ export function AppProvider({ children }) {
       };
       setCurrentUser(user);
       setProfilesCache(prev => ({ ...prev, [data.id]: user }));
+
+      // Register for push notifications and save token if it changed
+      registerForPushNotificationsAsync().then(token => {
+        if (token && token !== data.push_token) {
+          supabase.from('profiles').update({ push_token: token }).eq('id', userId);
+        }
+        if (token) scheduleReengagementNotification();
+      });
     }
   };
 
@@ -337,6 +351,7 @@ export function AppProvider({ children }) {
   };
 
   const logout = async () => {
+    cancelReengagementNotification();
     await supabase.auth.signOut();
   };
 
@@ -404,6 +419,30 @@ export function AppProvider({ children }) {
       );
       // If the current user is a farmer who matched, refresh their notifications
       if (currentUser?.isFarmer) loadNotifications(currentUser.id);
+
+      // Send push notifications to matched farmers
+      const farmerIds = [...new Set(matches.map(a => a.ownerId))];
+      const { data: farmerProfiles } = await supabase
+        .from('profiles')
+        .select('push_token')
+        .in('id', farmerIds)
+        .not('push_token', 'is', null);
+
+      if (farmerProfiles?.length) {
+        const locationText = data.locationLabel ? ` near ${data.locationLabel}` : '';
+        const matchedNames = matches.map(a => a.name).join(', ');
+        sendExpoPushNotifications(
+          farmerProfiles.map(p => ({
+            to: p.push_token,
+            title: '🚨 Possible match found!',
+            body: `${user.name} spotted a ${SPECIES_LIST.find(s => s.value === data.species)?.label ?? data.species}${locationText} — could be ${matchedNames}`,
+            data: { type: 'escape_alert', postId: row.id },
+            sound: 'default',
+            priority: 'high',
+            channelId: 'escape-alert',
+          }))
+        );
+      }
     }
 
     return matches;
@@ -435,6 +474,34 @@ export function AppProvider({ children }) {
 
     const newPost = transformPost({ ...row, likes: [], confirmations: [], comments: [] });
     setPosts(prev => [newPost, ...prev]);
+
+    // Notify followers
+    const followerIds = Object.entries(followGraph)
+      .filter(([, following]) => following.includes(user.id))
+      .map(([followerId]) => followerId);
+
+    if (followerIds.length > 0) {
+      const { data: followerProfiles } = await supabase
+        .from('profiles')
+        .select('push_token')
+        .in('id', followerIds)
+        .not('push_token', 'is', null);
+
+      if (followerProfiles?.length) {
+        const speciesEmoji = data.species
+          ? (SPECIES_LIST.find(s => s.value === data.species)?.emoji ?? '📸') + ' '
+          : '📸 ';
+        sendExpoPushNotifications(
+          followerProfiles.map(p => ({
+            to: p.push_token,
+            title: `${user.name} posted`,
+            body: `${speciesEmoji}${data.caption ?? 'New animal photo'}`,
+            data: { type: 'follow_post', postId: row.id, userId: user.id },
+            sound: 'default',
+          }))
+        );
+      }
+    }
   };
 
   // ── Interactions (optimistic) ────────────────────────────────────────────────
