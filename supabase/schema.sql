@@ -4,8 +4,12 @@ create table if not exists profiles (
   name        text not null,
   is_farmer   boolean default false,
   farm_name   text,
+  push_token  text,
   created_at  timestamptz default now()
 );
+
+-- Add push_token if running against an existing schema
+alter table profiles add column if not exists push_token text;
 
 -- ── Animals registered by farmers ───────────────────────────────────────────
 create table if not exists animals (
@@ -99,14 +103,30 @@ alter table comments      enable row level security;
 alter table follows       enable row level security;
 alter table notifications enable row level security;
 
-create policy "open"  on profiles      for all using (true) with check (true);
-create policy "open"  on animals       for all using (true) with check (true);
-create policy "open"  on posts         for all using (true) with check (true);
-create policy "open"  on likes         for all using (true) with check (true);
-create policy "open"  on confirmations for all using (true) with check (true);
-create policy "open"  on comments      for all using (true) with check (true);
-create policy "open"  on follows       for all using (true) with check (true);
-create policy "open"  on notifications for all using (true) with check (true);
+do $$ begin
+  if not exists (select 1 from pg_policies where tablename='profiles'      and policyname='open') then
+    create policy "open" on profiles      for all using (true) with check (true); end if;
+  if not exists (select 1 from pg_policies where tablename='animals'       and policyname='open') then
+    create policy "open" on animals       for all using (true) with check (true); end if;
+  if not exists (select 1 from pg_policies where tablename='posts'         and policyname='open') then
+    create policy "open" on posts         for all using (true) with check (true); end if;
+  if not exists (select 1 from pg_policies where tablename='likes'         and policyname='open') then
+    create policy "open" on likes         for all using (true) with check (true); end if;
+  if not exists (select 1 from pg_policies where tablename='confirmations' and policyname='open') then
+    create policy "open" on confirmations for all using (true) with check (true); end if;
+  if not exists (select 1 from pg_policies where tablename='comments'      and policyname='open') then
+    create policy "open" on comments      for all using (true) with check (true); end if;
+  if not exists (select 1 from pg_policies where tablename='follows'       and policyname='open') then
+    create policy "open" on follows       for all using (true) with check (true); end if;
+  if not exists (select 1 from pg_policies where tablename='notifications' and policyname='open') then
+    create policy "open" on notifications for all using (true) with check (true); end if;
+end $$;
 
-create policy "open"  on storage.objects for all
-  using (bucket_id = 'photos') with check (bucket_id = 'photos');
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where schemaname='storage' and tablename='objects' and policyname='open'
+  ) then
+    create policy "open" on storage.objects for all
+      using (bucket_id = 'photos') with check (bucket_id = 'photos');
+  end if;
+end $$;

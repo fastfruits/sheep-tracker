@@ -9,7 +9,8 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.anonymous.my-sheep-tracker"
     },
     "android": {
       "adaptiveIcon": {
@@ -27,6 +28,15 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#1B4D0E",
+          "sounds": [],
+          "iosDisplayInForeground": true
+        }
+      ],
       [
         "expo-splash-screen",
         {
