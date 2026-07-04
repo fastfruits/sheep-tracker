@@ -272,18 +272,20 @@ function AuthScreen({ onLogin, onSignup, authLoading, authError, clearAuthError 
       />
 
       {mode === 'signup-1' && (
-        <View style={styles.farmerToggleCard}>
+        <TouchableOpacity
+          style={[styles.farmerToggleCard, isFarmer && styles.farmerToggleCardActive]}
+          onPress={() => setIsFarmer(v => !v)}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.farmerToggleEmoji}>{isFarmer ? '🌾' : '🐑'}</Text>
           <View style={styles.farmerToggleLeft}>
-            <Text style={styles.farmerToggleTitle}>I'm a farmer</Text>
-            <Text style={styles.farmerToggleSub}>Register your animals to receive instant sighting alerts</Text>
+            <Text style={[styles.farmerToggleTitle, isFarmer && { color: C.green }]}>I'm a farmer</Text>
+            <Text style={styles.farmerToggleSub}>Get instant alerts when your animals are spotted</Text>
           </View>
-          <Switch
-            value={isFarmer}
-            onValueChange={setIsFarmer}
-            trackColor={{ false: C.border, true: C.greenMid }}
-            thumbColor="#FFF"
-          />
-        </View>
+          <View style={[styles.farmerCheckbox, isFarmer && styles.farmerCheckboxActive]}>
+            {isFarmer && <Text style={{ color: '#FFF', fontSize: 14, fontWeight: '700' }}>✓</Text>}
+          </View>
+        </TouchableOpacity>
       )}
 
       {mode === 'signup-1' && isFarmer && (
@@ -572,9 +574,20 @@ const styles = StyleSheet.create({
     borderRadius: 14, padding: 16, marginTop: 14,
     borderWidth: 1.5, borderColor: C.border, gap: 12,
   },
+  farmerToggleCardActive: {
+    borderColor: C.green, backgroundColor: '#F0FAF0',
+  },
+  farmerToggleEmoji: { fontSize: 24 },
   farmerToggleLeft: { flex: 1, gap: 2 },
   farmerToggleTitle: { fontSize: 16, fontWeight: '700', color: C.text },
   farmerToggleSub: { fontSize: 13, color: C.textSec, lineHeight: 18 },
+  farmerCheckbox: {
+    width: 26, height: 26, borderRadius: 8, borderWidth: 2, borderColor: C.border,
+    alignItems: 'center', justifyContent: 'center', backgroundColor: C.bg,
+  },
+  farmerCheckboxActive: {
+    backgroundColor: C.green, borderColor: C.green,
+  },
 
   stepHint: { fontSize: 13, color: C.textSec, textAlign: 'center', marginTop: 14 },
   authError: {

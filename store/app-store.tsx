@@ -7,6 +7,7 @@ import {
   scheduleReengagementNotification,
   cancelReengagementNotification,
 } from '@/lib/pushNotifications';
+import * as FileSystem from 'expo-file-system';
 
 export type Species = 'sheep' | 'cow' | 'goat' | 'pig' | 'horse' | 'dog' | 'cat' | 'chicken' | 'other';
 
@@ -110,11 +111,20 @@ function transformPost(row): Post {
 
 async function uploadPhoto(localUri: string): Promise<string | null> {
   try {
-    const ext = localUri.split('.').pop()?.toLowerCase() ?? 'jpg';
+    // Normalize ph:// and other iOS asset URIs to a file the fetch API can read
+    let uri = localUri;
+    if (!uri.startsWith('file://')) {
+      const dest = FileSystem.cacheDirectory + `upload_${Date.now()}.jpg`;
+      await FileSystem.copyAsync({ from: uri, to: dest });
+      uri = dest;
+    }
+
+    const ext = uri.split('.').pop()?.split('?')[0]?.toLowerCase() ?? 'jpg';
     const path = `${Date.now()}.${ext}`;
-    const response = await fetch(localUri);
-    const blob = await response.blob();
-    const { data, error } = await supabase.storage.from('photos').upload(path, blob, {
+    const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
+    const byteArray = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+
+    const { data, error } = await supabase.storage.from('photos').upload(path, byteArray, {
       contentType: `image/${ext === 'jpg' ? 'jpeg' : ext}`,
       upsert: false,
     });
