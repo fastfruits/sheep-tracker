@@ -510,7 +510,7 @@ const styles = StyleSheet.create({
   sortOptionTextActive: { color: C.green },
   sortCheck: { fontSize: 15, color: C.green, fontWeight: '800' },
 
-  filterRow: { paddingHorizontal: 16, paddingBottom: 10, gap: 8 },
+  filterRow: { paddingHorizontal: 16, paddingBottom: 10, gap: 8, alignItems: 'center' },
   filterPill: {
     paddingHorizontal: 16, paddingVertical: 8, borderRadius: 100,
     backgroundColor: C.card, borderWidth: 1.5, borderColor: C.border, flexShrink: 0,
