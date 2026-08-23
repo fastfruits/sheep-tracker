@@ -24,7 +24,16 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "bundler": "metro",
+      "favicon": "./assets/images/favicon.png",
+      "name": "SheepFinder",
+      "shortName": "SheepFinder",
+      "description": "Report escaped livestock and get farmers alerted instantly.",
+      "lang": "en",
+      "themeColor": "#1B4D0E",
+      "backgroundColor": "#F7F6F2",
+      "display": "standalone",
+      "startUrl": "/"
     },
     "plugins": [
       "expo-router",

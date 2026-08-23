@@ -3,32 +3,16 @@ import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   Image, TextInput, Modal, ScrollView,
-  KeyboardAvoidingView, Platform, Alert, Share, RefreshControl,
+  KeyboardAvoidingView, Platform, RefreshControl,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useApp, SPECIES_LIST, timeAgo } from '@/store/app-store';
-
-const C = {
-  bg: '#F7F6F2',
-  card: '#FFFFFF',
-  green: '#1B4D0E',
-  greenMid: '#2D7A18',
-  greenLight: '#EBF5E6',
-  border: '#E4E2DA',
-  text: '#111111',
-  textSec: '#77776E',
-  red: '#D93025',
-  amber: '#F59E0B',
-  orange: '#E8531F',
-  escapedBg: '#FFF3EE',
-  escapedBorder: '#F3AA8C',
-  resolvedBg: '#EDFAF1',
-  resolvedBorder: '#74C98A',
-  confirmBlue: '#1D6FA4',
-  confirmBlueBg: '#EBF4FB',
-};
+import { C } from '@/constants/colors';
+import { useDialog } from '@/lib/platform/dialog';
+import { pickImage } from '@/lib/platform/image-picker';
+import { shareText } from '@/lib/platform/share';
+import { PageHead } from '@/components/page-head';
 
 const FILTERS = [
   { key: 'All', label: 'All' },
@@ -51,6 +35,7 @@ function stringToColor(str) {
 
 function PostCard({ post, currentUserId, onLike, onAddComment, onConfirm, onShare, onReunite }) {
   const router = useRouter();
+  const dialog = useDialog();
   const [commentOpen, setCommentOpen] = useState(false);
   const [commentText, setCommentText] = useState('');
   const isLiked = post.likes.includes(currentUserId ?? 'guest');
@@ -67,15 +52,16 @@ function PostCard({ post, currentUserId, onLike, onAddComment, onConfirm, onShar
     setCommentText('');
   };
 
-  const handleReunite = () => {
-    Alert.alert(
+  const handleReunite = async () => {
+    const confirmed = await dialog.choose(
       'Mark as Reunited?',
       'This will close the sighting and mark it as resolved.',
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Mark Reunited', onPress: () => onReunite(post.id) },
+        { label: 'Mark Reunited', value: true },
+        { label: 'Cancel', value: null, style: 'cancel' },
       ]
     );
+    if (confirmed) onReunite(post.id);
   };
 
   return (
@@ -221,7 +207,8 @@ function PostCard({ post, currentUserId, onLike, onAddComment, onConfirm, onShar
 
 export default function GalleryScreen() {
   const insets = useSafeAreaInsets();
-  const { posts, currentUser, toggleLike, addComment, addCommunityPost, toggleConfirmation, markReunited } = useApp();
+  const { posts, currentUser, toggleLike, addComment, addCommunityPost, toggleConfirmation, markReunited, refreshPosts } = useApp();
+  const dialog = useDialog();
   const [filter, setFilter] = useState('All');
   const [sort, setSort] = useState('newest');
   const [search, setSearch] = useState('');
@@ -231,14 +218,20 @@ export default function GalleryScreen() {
 
   // Share modal state
   const [sharePhoto, setSharePhoto] = useState(null);
+  const [sharePhotoBase64, setSharePhotoBase64] = useState(null);
   const [shareCaption, setShareCaption] = useState('');
   const [shareSpecies, setShareSpecies] = useState(null);
   const [shareLocation, setShareLocation] = useState('');
 
-  const onRefresh = useCallback(() => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 800);
-  }, []);
+    // There is no realtime subscription, so this is the only refresh path.
+    try {
+      await refreshPosts();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshPosts]);
 
   const handleShare = async (post) => {
     const species = SPECIES_LIST.find(s => s.value === post.species);
@@ -248,9 +241,10 @@ export default function GalleryScreen() {
       post.locationLabel ? `📍 ${post.locationLabel}` : '',
       post.caption,
     ].filter(Boolean).join('\n');
-    try {
-      await Share.share({ message: msg });
-    } catch { /* dismissed */ }
+    const result = await shareText(msg);
+    if (result === 'copied') {
+      await dialog.alert('Copied to clipboard', 'Paste it anywhere to share this sighting.');
+    }
   };
 
   const q = search.trim().toLowerCase();
@@ -282,23 +276,35 @@ export default function GalleryScreen() {
   // newest: already ordered by insert order (newest first)
 
   const pickPhoto = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') { Alert.alert('Photo library access required'); return; }
-    const r = await ImagePicker.launchImageLibraryAsync({ allowsEditing: true, aspect: [4, 3], quality: 0.7 });
-    if (!r.canceled) setSharePhoto(r.assets[0].uri);
+    const result = await pickImage('library');
+    if (result.status === 'denied') { await dialog.alert('Photo library access required'); return; }
+    if (result.status === 'picked') {
+      setSharePhoto(result.image.uri);
+      setSharePhotoBase64(result.image.base64);
+    }
   };
 
-  const submitShare = () => {
-    if (!shareCaption.trim()) { Alert.alert('Add a caption first'); return; }
-    addCommunityPost({ photo: sharePhoto, caption: shareCaption.trim(), species: shareSpecies, locationLabel: shareLocation.trim() || undefined });
+  const submitShare = async () => {
+    if (!shareCaption.trim()) { await dialog.alert('Add a caption first'); return; }
+    addCommunityPost({
+      photo: sharePhoto,
+      photoBase64: sharePhotoBase64,
+      caption: shareCaption.trim(),
+      species: shareSpecies,
+      locationLabel: shareLocation.trim() || undefined,
+    });
     setModalOpen(false);
-    setSharePhoto(null); setShareCaption(''); setShareSpecies(null); setShareLocation('');
+    setSharePhoto(null); setSharePhotoBase64(null); setShareCaption(''); setShareSpecies(null); setShareLocation('');
   };
 
   const openSightings = posts.filter(p => p.isSighting && p.sightingStatus !== 'resolved').length;
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
+      <PageHead
+        title="Community"
+        description="Recent escaped-animal sightings and photos shared by the SheepFinder community."
+      />
       {/* Header */}
       <View style={styles.header}>
         <View>
@@ -408,7 +414,7 @@ export default function GalleryScreen() {
       />
 
       {/* Share modal */}
-      <Modal visible={modalOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setModalOpen(false)}>
+      <Modal visible={modalOpen} animationType="slide" onRequestClose={() => setModalOpen(false)}>
         <SafeAreaView style={styles.modal}>
           <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <View style={styles.modalBar}>
