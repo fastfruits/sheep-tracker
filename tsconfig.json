@@ -2,12 +2,15 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
-    "jsx": "react-native",
-    "types": ["react", "react-native", "expo-router"],
-    "customConditions": [],
-    "lib": ["ESNext", "DOM.Iterable"], // override DOM but keep iterables
+    "types": ["react", "expo-router"],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      // react-native's package.json blocks "./types/*" in its exports map, so
+      // under moduleResolution "bundler" the internal `Constructor` helper that
+      // View/Text/ScrollView are built from fails to resolve — which is what
+      // made every `<View>`/`<Text>` a "not a valid JSX component" error and why
+      // the screens are all `// @ts-nocheck`. Point at the files directly.
+      "react-native/types/*": ["./node_modules/react-native/types/*"]
     }
   },
   "include": [

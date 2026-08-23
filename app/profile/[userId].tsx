@@ -2,28 +2,13 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  Image, ScrollView, Dimensions,
+  Image, ScrollView,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useApp, SPECIES_LIST, timeAgo } from '@/store/app-store';
-
-const { width } = Dimensions.get('window');
-const GRID_SIZE = (width - 48) / 2; // 2 cols, 16px padding each side + 16 gap
-
-const C = {
-  bg: '#F7F6F2',
-  card: '#FFFFFF',
-  green: '#1B4D0E',
-  greenLight: '#EBF5E6',
-  border: '#E4E2DA',
-  text: '#111111',
-  textSec: '#77776E',
-  red: '#D93025',
-  orange: '#E8531F',
-  escapedDot: '#E8531F',
-  resolvedDot: '#2D7A18',
-};
+import { C } from '@/constants/colors';
+import { PageHead } from '@/components/page-head';
 
 const TABS = ['Posts', 'Animals'];
 
@@ -206,6 +191,7 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
+      <PageHead title={user.name} description={`${user.name}'s sightings and animals on SheepFinder.`} />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {headerComponent}
         {userPosts.length === 0 ? (
@@ -286,11 +272,11 @@ const styles = StyleSheet.create({
   grid: { padding: 16, gap: 8 },
   gridRow: { flexDirection: 'row', gap: 8 },
   gridItem: {
-    width: GRID_SIZE, height: GRID_SIZE, borderRadius: 12,
+    flex: 1, aspectRatio: 1, borderRadius: 12,
     overflow: 'hidden', backgroundColor: C.card,
     borderWidth: 1, borderColor: C.border,
   },
-  gridItemSpacer: { width: GRID_SIZE },
+  gridItemSpacer: { flex: 1 },
   gridPhoto: { width: '100%', height: '100%', resizeMode: 'cover' },
   gridPhotoEmpty: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   gridEmoji: { fontSize: 48 },

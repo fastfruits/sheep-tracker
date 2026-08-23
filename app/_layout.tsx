@@ -1,15 +1,15 @@
 // @ts-nocheck
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import * as Notifications from 'expo-notifications';
-import { AppState } from 'react-native';
-import 'react-native-reanimated';
+import { AppState, StyleSheet, View } from 'react-native';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AppProvider } from '@/store/app-store';
-import { resetReengagementTimer } from '@/lib/pushNotifications';
+import { DialogProvider } from '@/lib/platform/dialog';
+import { CONTENT_MAX_WIDTH } from '@/constants/layout';
+import { resetReengagementTimer, subscribeToNotificationTaps } from '@/lib/platform/notifications';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -17,18 +17,10 @@ export const unstable_settings = {
 
 function NotificationHandler() {
   const router = useRouter();
-  const notificationListener = useRef(null);
-  const responseListener = useRef(null);
 
   useEffect(() => {
-    // Fired when a notification is received while app is foregrounded
-    notificationListener.current = Notifications.addNotificationReceivedListener(() => {
-      // Badge count updates automatically via expo-notifications
-    });
-
-    // Fired when the user taps a notification
-    responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
-      const data = response.notification.request.content.data;
+    // No-op on web — see lib/platform/notifications.web.ts
+    const unsubscribe = subscribeToNotificationTaps(data => {
       if (data?.type === 'escape_alert') {
         // Farmer tapped escape alert → open Account tab to see the notification
         router.push('/(tabs)/account');
@@ -38,14 +30,13 @@ function NotificationHandler() {
       }
     });
 
-    // Reset reengagement timer when app comes to foreground
+    // Reset reengagement timer when the app comes to foreground
     const appStateSub = AppState.addEventListener('change', state => {
       if (state === 'active') resetReengagementTimer();
     });
 
     return () => {
-      notificationListener.current?.remove();
-      responseListener.current?.remove();
+      unsubscribe();
       appStateSub.remove();
     };
   }, []);
@@ -58,15 +49,29 @@ export default function RootLayout() {
 
   return (
     <AppProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <NotificationHandler />
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="profile/[userId]" options={{ headerShown: false }} />
-          <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-        </Stack>
-        <StatusBar style="dark" />
-      </ThemeProvider>
+      <DialogProvider>
+        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <NotificationHandler />
+          {/* Clamp to a phone-ish column so the site is readable on a desktop
+              browser. No-op on phones, which are all narrower than the max. */}
+          <View style={styles.shell}>
+            <Stack>
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="profile/[userId]" options={{ headerShown: false }} />
+            </Stack>
+          </View>
+          <StatusBar style="dark" />
+        </ThemeProvider>
+      </DialogProvider>
     </AppProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  shell: {
+    flex: 1,
+    width: '100%',
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: 'center',
+  },
+});
