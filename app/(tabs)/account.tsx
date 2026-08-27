@@ -2,27 +2,17 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TextInput,
-  TouchableOpacity, Switch, Alert,
+  TouchableOpacity, Switch, Platform,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useApp, SPECIES_LIST, SEED_USERS, timeAgo } from '@/store/app-store';
-
-const C = {
-  bg: '#F7F6F2',
-  card: '#FFFFFF',
-  green: '#1B4D0E',
-  greenMid: '#2D7A18',
-  greenLight: '#EBF5E6',
-  border: '#E4E2DA',
-  text: '#111111',
-  textSec: '#77776E',
-  red: '#D93025',
-  amber: '#F59E0B',
-  amberLight: '#FFFBEB',
-  amberBorder: '#FDE68A',
-  orange: '#E8531F',
-};
+import { C } from '@/constants/colors';
+import { useDialog } from '@/lib/platform/dialog';
+import { PageHead } from '@/components/page-head';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
+import { WrapRow } from '@/components/wrap-row';
+import { NARROW_MAX_WIDTH } from '@/constants/layout';
 
 // ─── Following list ──────────────────────────────────────────────────────────
 function stringToColor(str) {
@@ -95,16 +85,18 @@ function AnimalSignupCard({ animal, onRemove }) {
 
 // ─── Inline add-animal form ───────────────────────────────────────────────────
 function AddAnimalInline({ onAdd }) {
+  const dialog = useDialog();
+  const { isDesktop } = useBreakpoint();
   const [species, setSpecies] = useState(null);
   const [name, setName] = useState('');
   const [color, setColor] = useState('');
   const [markings, setMarkings] = useState('');
   const [tagNumber, setTagNumber] = useState('');
 
-  const submit = () => {
-    if (!species) { Alert.alert('Select an animal type'); return; }
-    if (!name.trim()) { Alert.alert("Enter the animal's name"); return; }
-    if (!color.trim()) { Alert.alert('Describe the primary colour'); return; }
+  const submit = async () => {
+    if (!species) { await dialog.alert('Select an animal type'); return; }
+    if (!name.trim()) { await dialog.alert("Enter the animal's name"); return; }
+    if (!color.trim()) { await dialog.alert('Describe the primary colour'); return; }
     onAdd({ species, name: name.trim(), primaryColor: color.trim(), markings: markings.trim(), tagNumber: tagNumber.trim() || undefined });
     setSpecies(null); setName(''); setColor(''); setMarkings(''); setTagNumber('');
   };
@@ -113,7 +105,7 @@ function AddAnimalInline({ onAdd }) {
     <View style={styles.addAnimalBox}>
       <Text style={styles.addAnimalTitle}>Add an animal</Text>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pillRow}>
+      <WrapRow wrap={isDesktop} contentContainerStyle={styles.pillRow}>
         {SPECIES_LIST.map(s => (
           <TouchableOpacity
             key={s.value}
@@ -125,7 +117,7 @@ function AddAnimalInline({ onAdd }) {
             <Text style={[styles.pillLabel, species === s.value && styles.pillLabelActive]}>{s.label}</Text>
           </TouchableOpacity>
         ))}
-      </ScrollView>
+      </WrapRow>
 
       <TextInput style={[styles.input, { marginTop: 10 }]} placeholder="Name (e.g. Dotty)" placeholderTextColor={C.textSec} value={name} onChangeText={setName} />
       <TextInput style={[styles.input, { marginTop: 8 }]} placeholder="Primary colour (e.g. white, brown)" placeholderTextColor={C.textSec} value={color} onChangeText={setColor} />
@@ -148,6 +140,7 @@ function AddAnimalInline({ onAdd }) {
 
 // ─── Auth screen (login / 2-step signup) ─────────────────────────────────────
 function AuthScreen({ onLogin, onSignup, authLoading, authError, clearAuthError }) {
+  const dialog = useDialog();
   const [mode, setMode] = useState('login'); // 'login' | 'signup-1' | 'signup-2'
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -158,11 +151,11 @@ function AuthScreen({ onLogin, onSignup, authLoading, authError, clearAuthError 
 
   const switchMode = (m) => { clearAuthError(); setMode(m); };
 
-  const goToStep2 = () => {
-    if (!name.trim()) { Alert.alert('Enter your full name'); return; }
-    if (!email.trim()) { Alert.alert('Enter your email'); return; }
-    if (!password || password.length < 6) { Alert.alert('Password must be at least 6 characters'); return; }
-    if (isFarmer && !farmName.trim()) { Alert.alert('Enter your farm name'); return; }
+  const goToStep2 = async () => {
+    if (!name.trim()) { await dialog.alert('Enter your full name'); return; }
+    if (!email.trim()) { await dialog.alert('Enter your email'); return; }
+    if (!password || password.length < 6) { await dialog.alert('Password must be at least 6 characters'); return; }
+    if (isFarmer && !farmName.trim()) { await dialog.alert('Enter your farm name'); return; }
     if (isFarmer) {
       setMode('signup-2');
     } else {
@@ -174,9 +167,9 @@ function AuthScreen({ onLogin, onSignup, authLoading, authError, clearAuthError 
     onSignup(name.trim(), email.trim(), password, true, farmName.trim(), animals);
   };
 
-  const handleLogin = () => {
-    if (!email.trim()) { Alert.alert('Enter your email'); return; }
-    if (!password) { Alert.alert('Enter your password'); return; }
+  const handleLogin = async () => {
+    if (!email.trim()) { await dialog.alert('Enter your email'); return; }
+    if (!password) { await dialog.alert('Enter your password'); return; }
     onLogin(email.trim(), password);
   };
 
@@ -332,6 +325,8 @@ export default function AccountScreen() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [followingOpen, setFollowingOpen] = useState(false);
 
+  const { isDesktop } = useBreakpoint();
+
   const myAnimals = registeredAnimals.filter(a => a.ownerId === currentUser?.id);
   const myPosts = posts.filter(p => p.userId === currentUser?.id);
   const followerCount = currentUser ? getFollowerCount(currentUser.id) : 0;
@@ -340,6 +335,10 @@ export default function AccountScreen() {
   if (!currentUser) {
     return (
       <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
+        <PageHead
+          title="Sign in"
+          description="Sign in or create a SheepFinder account to register animals and receive sighting alerts."
+        />
         <AuthScreen
           onLogin={login}
           onSignup={signup}
@@ -358,7 +357,14 @@ export default function AccountScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <PageHead
+        title="Account"
+        description="Manage your SheepFinder profile, registered animals and sighting alerts."
+      />
+      <ScrollView
+        contentContainerStyle={[styles.scroll, isDesktop && styles.scrollDesktop]}
+        showsVerticalScrollIndicator={false}
+      >
 
         {/* Profile header */}
         <View style={styles.profileHeader}>
@@ -548,8 +554,12 @@ export default function AccountScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
-  scroll: { padding: 20 },
-  authScroll: { padding: 24, flexGrow: 1 },
+  scroll: { padding: 20, width: '100%', maxWidth: NARROW_MAX_WIDTH, alignSelf: 'center' },
+  scrollDesktop: { paddingTop: 40, paddingBottom: 64 },
+  authScroll: {
+    padding: 24, flexGrow: 1,
+    width: '100%', maxWidth: NARROW_MAX_WIDTH, alignSelf: 'center',
+  },
 
   authHero: { alignItems: 'center', paddingTop: 16, paddingBottom: 28, gap: 6 },
   authLogoWrap: {
@@ -759,6 +769,3 @@ const styles = StyleSheet.create({
   followBtnText: { fontSize: 13, fontWeight: '800', color: '#FFF' },
   followBtnTextActive: { color: C.textSec },
 });
-
-// need Platform import for monospace font
-import { Platform } from 'react-native';

@@ -3,32 +3,19 @@ import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   Image, TextInput, Modal, ScrollView,
-  KeyboardAvoidingView, Platform, Alert, Share, RefreshControl,
+  KeyboardAvoidingView, Platform, RefreshControl,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useApp, SPECIES_LIST, timeAgo } from '@/store/app-store';
-
-const C = {
-  bg: '#F7F6F2',
-  card: '#FFFFFF',
-  green: '#1B4D0E',
-  greenMid: '#2D7A18',
-  greenLight: '#EBF5E6',
-  border: '#E4E2DA',
-  text: '#111111',
-  textSec: '#77776E',
-  red: '#D93025',
-  amber: '#F59E0B',
-  orange: '#E8531F',
-  escapedBg: '#FFF3EE',
-  escapedBorder: '#F3AA8C',
-  resolvedBg: '#EDFAF1',
-  resolvedBorder: '#74C98A',
-  confirmBlue: '#1D6FA4',
-  confirmBlueBg: '#EBF4FB',
-};
+import { C } from '@/constants/colors';
+import { useDialog } from '@/lib/platform/dialog';
+import { pickImage } from '@/lib/platform/image-picker';
+import { shareText } from '@/lib/platform/share';
+import { PageHead } from '@/components/page-head';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
+import { WrapRow } from '@/components/wrap-row';
+import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 
 const FILTERS = [
   { key: 'All', label: 'All' },
@@ -49,8 +36,9 @@ function stringToColor(str) {
   return colors[Math.abs(h) % colors.length];
 }
 
-function PostCard({ post, currentUserId, onLike, onAddComment, onConfirm, onShare, onReunite }) {
+function PostCard({ post, currentUserId, onLike, onAddComment, onConfirm, onShare, onReunite, cardStyle }) {
   const router = useRouter();
+  const dialog = useDialog();
   const [commentOpen, setCommentOpen] = useState(false);
   const [commentText, setCommentText] = useState('');
   const isLiked = post.likes.includes(currentUserId ?? 'guest');
@@ -67,19 +55,20 @@ function PostCard({ post, currentUserId, onLike, onAddComment, onConfirm, onShar
     setCommentText('');
   };
 
-  const handleReunite = () => {
-    Alert.alert(
+  const handleReunite = async () => {
+    const confirmed = await dialog.choose(
       'Mark as Reunited?',
       'This will close the sighting and mark it as resolved.',
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Mark Reunited', onPress: () => onReunite(post.id) },
+        { label: 'Mark Reunited', value: true },
+        { label: 'Cancel', value: null, style: 'cancel' },
       ]
     );
+    if (confirmed) onReunite(post.id);
   };
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, cardStyle]} dataSet={{ hoverable: 'card' }}>
       {isEscaped && (
         <View style={styles.escapedBanner}>
           <Text style={styles.escapedBannerText}>🚨  Escaped Animal — Help needed!</Text>
@@ -221,7 +210,10 @@ function PostCard({ post, currentUserId, onLike, onAddComment, onConfirm, onShar
 
 export default function GalleryScreen() {
   const insets = useSafeAreaInsets();
-  const { posts, currentUser, toggleLike, addComment, addCommunityPost, toggleConfirmation, markReunited } = useApp();
+  const { posts, currentUser, toggleLike, addComment, addCommunityPost, toggleConfirmation, markReunited, refreshPosts } = useApp();
+  const dialog = useDialog();
+  const { isDesktop, isWide } = useBreakpoint();
+  const columns = isWide ? 2 : 1;
   const [filter, setFilter] = useState('All');
   const [sort, setSort] = useState('newest');
   const [search, setSearch] = useState('');
@@ -231,14 +223,20 @@ export default function GalleryScreen() {
 
   // Share modal state
   const [sharePhoto, setSharePhoto] = useState(null);
+  const [sharePhotoBase64, setSharePhotoBase64] = useState(null);
   const [shareCaption, setShareCaption] = useState('');
   const [shareSpecies, setShareSpecies] = useState(null);
   const [shareLocation, setShareLocation] = useState('');
 
-  const onRefresh = useCallback(() => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 800);
-  }, []);
+    // There is no realtime subscription, so this is the only refresh path.
+    try {
+      await refreshPosts();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshPosts]);
 
   const handleShare = async (post) => {
     const species = SPECIES_LIST.find(s => s.value === post.species);
@@ -248,9 +246,10 @@ export default function GalleryScreen() {
       post.locationLabel ? `📍 ${post.locationLabel}` : '',
       post.caption,
     ].filter(Boolean).join('\n');
-    try {
-      await Share.share({ message: msg });
-    } catch { /* dismissed */ }
+    const result = await shareText(msg);
+    if (result === 'copied') {
+      await dialog.alert('Copied to clipboard', 'Paste it anywhere to share this sighting.');
+    }
   };
 
   const q = search.trim().toLowerCase();
@@ -282,25 +281,38 @@ export default function GalleryScreen() {
   // newest: already ordered by insert order (newest first)
 
   const pickPhoto = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') { Alert.alert('Photo library access required'); return; }
-    const r = await ImagePicker.launchImageLibraryAsync({ allowsEditing: true, aspect: [4, 3], quality: 0.7 });
-    if (!r.canceled) setSharePhoto(r.assets[0].uri);
+    const result = await pickImage('library');
+    if (result.status === 'denied') { await dialog.alert('Photo library access required'); return; }
+    if (result.status === 'picked') {
+      setSharePhoto(result.image.uri);
+      setSharePhotoBase64(result.image.base64);
+    }
   };
 
-  const submitShare = () => {
-    if (!shareCaption.trim()) { Alert.alert('Add a caption first'); return; }
-    addCommunityPost({ photo: sharePhoto, caption: shareCaption.trim(), species: shareSpecies, locationLabel: shareLocation.trim() || undefined });
+  const submitShare = async () => {
+    if (!shareCaption.trim()) { await dialog.alert('Add a caption first'); return; }
+    addCommunityPost({
+      photo: sharePhoto,
+      photoBase64: sharePhotoBase64,
+      caption: shareCaption.trim(),
+      species: shareSpecies,
+      locationLabel: shareLocation.trim() || undefined,
+    });
     setModalOpen(false);
-    setSharePhoto(null); setShareCaption(''); setShareSpecies(null); setShareLocation('');
+    setSharePhoto(null); setSharePhotoBase64(null); setShareCaption(''); setShareSpecies(null); setShareLocation('');
   };
 
   const openSightings = posts.filter(p => p.isSighting && p.sightingStatus !== 'resolved').length;
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
+      <PageHead
+        title="Community"
+        description="Recent escaped-animal sightings and photos shared by the SheepFinder community."
+      />
+      <View style={[styles.page, isDesktop && styles.pageDesktop]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, isDesktop && styles.headerDesktop]}>
         <View>
           <Text style={styles.headerTitle}>Community</Text>
           <Text style={styles.headerSub}>
@@ -313,7 +325,7 @@ export default function GalleryScreen() {
       </View>
 
       {/* Search bar */}
-      <View style={styles.searchRow}>
+      <View style={[styles.searchRow, isDesktop && styles.searchRowDesktop]}>
         <View style={styles.searchBox}>
           <Text style={styles.searchIcon}>🔍</Text>
           <TextInput
@@ -349,7 +361,7 @@ export default function GalleryScreen() {
       )}
 
       {/* Filter tabs */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+      <WrapRow wrap={isDesktop} contentContainerStyle={[styles.filterRow, isDesktop && styles.filterRowDesktop]}>
         {FILTERS.map(f => (
           <TouchableOpacity
             key={f.key}
@@ -360,11 +372,15 @@ export default function GalleryScreen() {
             <Text style={[styles.filterText, filter === f.key && styles.filterTextActive]}>{f.label}</Text>
           </TouchableOpacity>
         ))}
-      </ScrollView>
+      </WrapRow>
 
       <FlatList
         data={filtered}
         keyExtractor={p => p.id}
+        // numColumns cannot change on a mounted FlatList, so remount on change.
+        key={`cols-${columns}`}
+        numColumns={columns}
+        columnWrapperStyle={columns > 1 ? styles.feedRow : undefined}
         renderItem={({ item }) => (
           <PostCard
             post={item}
@@ -374,9 +390,10 @@ export default function GalleryScreen() {
             onConfirm={toggleConfirmation}
             onShare={handleShare}
             onReunite={markReunited}
+            cardStyle={columns > 1 ? styles.cardColumn : undefined}
           />
         )}
-        contentContainerStyle={styles.feed}
+        contentContainerStyle={[styles.feed, isDesktop && styles.feedDesktop]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         refreshControl={
@@ -407,8 +424,10 @@ export default function GalleryScreen() {
         }
       />
 
+      </View>
+
       {/* Share modal */}
-      <Modal visible={modalOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setModalOpen(false)}>
+      <Modal visible={modalOpen} animationType="slide" onRequestClose={() => setModalOpen(false)}>
         <SafeAreaView style={styles.modal}>
           <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <View style={styles.modalBar}>
@@ -471,17 +490,21 @@ export default function GalleryScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
+  page: { flex: 1, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' },
+  pageDesktop: { paddingHorizontal: 24, paddingTop: 28 },
 
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingTop: 4, paddingBottom: 10,
   },
+  headerDesktop: { paddingHorizontal: 0, paddingBottom: 18 },
   headerTitle: { fontSize: 28, fontWeight: '800', color: C.text, letterSpacing: -0.5 },
   headerSub: { fontSize: 13, color: C.textSec, marginTop: 1 },
   shareBtn: { backgroundColor: C.green, paddingHorizontal: 18, paddingVertical: 9, borderRadius: 100 },
   shareBtnText: { color: '#FFF', fontWeight: '800', fontSize: 14 },
 
   searchRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginBottom: 10, alignItems: 'center' },
+  searchRowDesktop: { paddingHorizontal: 0, marginBottom: 16 },
   searchBox: {
     flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8,
     backgroundColor: C.card, borderRadius: 12, borderWidth: 1.5,
@@ -511,6 +534,7 @@ const styles = StyleSheet.create({
   sortCheck: { fontSize: 15, color: C.green, fontWeight: '800' },
 
   filterRow: { paddingHorizontal: 16, paddingBottom: 10, gap: 8, alignItems: 'center' },
+  filterRowDesktop: { paddingHorizontal: 0, paddingBottom: 20 },
   filterPill: {
     paddingHorizontal: 16, paddingVertical: 8, borderRadius: 100,
     backgroundColor: C.card, borderWidth: 1.5, borderColor: C.border, flexShrink: 0,
@@ -520,6 +544,9 @@ const styles = StyleSheet.create({
   filterTextActive: { color: '#FFF' },
 
   feed: { paddingHorizontal: 16, paddingBottom: 24, gap: 16 },
+  feedDesktop: { paddingHorizontal: 0, paddingBottom: 56 },
+  feedRow: { gap: 16, alignItems: 'flex-start' },
+  cardColumn: { flex: 1 },
 
   card: {
     backgroundColor: C.card, borderRadius: 18, overflow: 'hidden',

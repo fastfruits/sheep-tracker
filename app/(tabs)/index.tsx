@@ -2,33 +2,29 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TextInput,
-  TouchableOpacity, Alert, Image, ActivityIndicator,
+  TouchableOpacity, Image, ActivityIndicator,
   KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { useApp, SPECIES_LIST } from '@/store/app-store';
-
-const C = {
-  bg: '#F7F6F2',
-  card: '#FFFFFF',
-  green: '#1B4D0E',
-  greenMid: '#2D7A18',
-  greenLight: '#EBF5E6',
-  border: '#E4E2DA',
-  text: '#111111',
-  textSec: '#77776E',
-  red: '#D93025',
-  amber: '#F59E0B',
-  orange: '#E8531F',
-};
+import { C } from '@/constants/colors';
+import { useDialog } from '@/lib/platform/dialog';
+import { pickImage } from '@/lib/platform/image-picker';
+import { reverseGeocode } from '@/lib/platform/location';
+import { PageHead } from '@/components/page-head';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
+import { WrapRow } from '@/components/wrap-row';
+import { NARROW_MAX_WIDTH } from '@/constants/layout';
 
 export default function ReportScreen() {
   const insets = useSafeAreaInsets();
   const { submitSighting } = useApp();
+  const dialog = useDialog();
+  const { isDesktop } = useBreakpoint();
 
   const [photo, setPhoto] = useState(null);
+  const [photoBase64, setPhotoBase64] = useState(null);
   const [species, setSpecies] = useState(null);
   const [color, setColor] = useState('');
   const [markings, setMarkings] = useState('');
@@ -39,55 +35,56 @@ export default function ReportScreen() {
   const [submitted, setSubmitted] = useState(false);
   const [matchedAnimals, setMatchedAnimals] = useState([]);
 
-  const onPhotoPress = () => {
-    Alert.alert('Add Photo', 'Choose a source', [
-      { text: 'Camera', onPress: launchCamera },
-      { text: 'Photo Library', onPress: launchLibrary },
-      { text: 'Cancel', style: 'cancel' },
+  const onPhotoPress = async () => {
+    const source = await dialog.choose('Add Photo', 'Choose a source', [
+      { label: 'Camera', value: 'camera' },
+      { label: 'Photo Library', value: 'library' },
+      { label: 'Cancel', value: null, style: 'cancel' },
     ]);
-  };
+    if (!source) return;
 
-  const launchCamera = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') { Alert.alert('Camera access required'); return; }
-    const r = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [4, 3], quality: 0.7 });
-    if (!r.canceled) setPhoto(r.assets[0].uri);
-  };
-
-  const launchLibrary = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') { Alert.alert('Photo library access required'); return; }
-    const r = await ImagePicker.launchImageLibraryAsync({ allowsEditing: true, aspect: [4, 3], quality: 0.7 });
-    if (!r.canceled) setPhoto(r.assets[0].uri);
+    const result = await pickImage(source);
+    if (result.status === 'denied') {
+      await dialog.alert(
+        result.source === 'camera' ? 'Camera access required' : 'Photo library access required'
+      );
+      return;
+    }
+    if (result.status === 'picked') {
+      setPhoto(result.image.uri);
+      setPhotoBase64(result.image.base64);
+    }
   };
 
   const detectLocation = async () => {
     setLoadingLocation(true);
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Location access required');
+      await dialog.alert('Location access required');
       setLoadingLocation(false);
       return;
     }
     try {
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       setCoords(loc.coords);
-      const [geo] = await Location.reverseGeocodeAsync(loc.coords);
-      if (geo) {
-        const parts = [geo.street, geo.district || geo.subregion, geo.city].filter(Boolean);
-        setLocationLabel(parts.join(', '));
-      }
+      // Returns null rather than throwing when reverse geocoding is
+      // unavailable — we keep the coordinates and let the user type a label.
+      const label = await reverseGeocode(loc.coords);
+      if (label) setLocationLabel(label);
     } catch {
-      Alert.alert('Could not get location', 'Please type it manually.');
+      await dialog.alert('Could not get location', 'Please type it manually.');
     }
     setLoadingLocation(false);
   };
 
-  const handleSubmit = () => {
-    if (!species) { Alert.alert('Select an animal type'); return; }
-    if (!color.trim()) { Alert.alert('Describe the animal\'s colour'); return; }
-    const matches = submitSighting({
+  const handleSubmit = async () => {
+    if (!species) { await dialog.alert('Select an animal type'); return; }
+    if (!color.trim()) { await dialog.alert('Describe the animal\'s colour'); return; }
+    // submitSighting is async — without the await, matchedAnimals held a
+    // Promise and the "Farmer notified!" card never rendered.
+    const matches = await submitSighting({
       photo,
+      photoBase64,
       species,
       primaryColor: color.trim(),
       markings: markings.trim(),
@@ -101,7 +98,7 @@ export default function ReportScreen() {
   };
 
   const reset = () => {
-    setPhoto(null); setSpecies(null); setColor(''); setMarkings('');
+    setPhoto(null); setPhotoBase64(null); setSpecies(null); setColor(''); setMarkings('');
     setCaption(''); setLocationLabel(''); setCoords(null);
     setSubmitted(false); setMatchedAnimals([]);
   };
@@ -118,7 +115,7 @@ export default function ReportScreen() {
             Your sighting has been posted to the community feed.
           </Text>
 
-          {matchedAnimals.length > 0 && (
+          {matchedAnimals?.length > 0 && (
             <View style={styles.matchCard}>
               <View style={styles.matchCardHeader}>
                 <Text style={styles.matchBell}>🔔</Text>
@@ -146,9 +143,13 @@ export default function ReportScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
+      <PageHead
+        title="Report an escaped animal"
+        description="Spotted an escaped sheep, cow or goat? Report it in seconds and the farmer who owns it is alerted instantly, with your location."
+      />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
-          contentContainerStyle={styles.scroll}
+          contentContainerStyle={[styles.scroll, isDesktop && styles.scrollDesktop]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
@@ -177,7 +178,7 @@ export default function ReportScreen() {
 
           {/* Species */}
           <Text style={styles.label}>Animal type <Text style={styles.req}>*</Text></Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pillRow}>
+          <WrapRow wrap={isDesktop} contentContainerStyle={styles.pillRow}>
             {SPECIES_LIST.map(s => (
               <TouchableOpacity
                 key={s.value}
@@ -189,7 +190,7 @@ export default function ReportScreen() {
                 <Text style={[styles.pillLabel, species === s.value && styles.pillLabelActive]}>{s.label}</Text>
               </TouchableOpacity>
             ))}
-          </ScrollView>
+          </WrapRow>
 
           {/* Colour */}
           <Text style={styles.label}>Primary colour <Text style={styles.req}>*</Text></Text>
@@ -258,7 +259,9 @@ export default function ReportScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
-  scroll: { padding: 20 },
+  // Forms read better narrow, so this page clamps tighter than the feed.
+  scroll: { padding: 20, width: '100%', maxWidth: NARROW_MAX_WIDTH, alignSelf: 'center' },
+  scrollDesktop: { paddingTop: 40, paddingBottom: 64 },
   pageTitle: { fontSize: 28, fontWeight: '800', color: C.text, letterSpacing: -0.5, marginBottom: 6 },
   pageSub: { fontSize: 14, color: C.textSec, lineHeight: 21, marginBottom: 24 },
 
@@ -314,7 +317,10 @@ const styles = StyleSheet.create({
   },
   btnSubmitText: { color: '#FFF', fontSize: 17, fontWeight: '800', letterSpacing: 0.2 },
 
-  successWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 28 },
+  successWrap: {
+    flex: 1, justifyContent: 'center', alignItems: 'center', padding: 28,
+    width: '100%', maxWidth: NARROW_MAX_WIDTH, alignSelf: 'center',
+  },
   successIconWrap: {
     width: 80, height: 80, borderRadius: 40, backgroundColor: C.greenLight,
     justifyContent: 'center', alignItems: 'center', marginBottom: 20,
