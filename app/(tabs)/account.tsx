@@ -10,6 +10,9 @@ import { useApp, SPECIES_LIST, SEED_USERS, timeAgo } from '@/store/app-store';
 import { C } from '@/constants/colors';
 import { useDialog } from '@/lib/platform/dialog';
 import { PageHead } from '@/components/page-head';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
+import { WrapRow } from '@/components/wrap-row';
+import { NARROW_MAX_WIDTH } from '@/constants/layout';
 
 // ─── Following list ──────────────────────────────────────────────────────────
 function stringToColor(str) {
@@ -83,6 +86,7 @@ function AnimalSignupCard({ animal, onRemove }) {
 // ─── Inline add-animal form ───────────────────────────────────────────────────
 function AddAnimalInline({ onAdd }) {
   const dialog = useDialog();
+  const { isDesktop } = useBreakpoint();
   const [species, setSpecies] = useState(null);
   const [name, setName] = useState('');
   const [color, setColor] = useState('');
@@ -101,7 +105,7 @@ function AddAnimalInline({ onAdd }) {
     <View style={styles.addAnimalBox}>
       <Text style={styles.addAnimalTitle}>Add an animal</Text>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pillRow}>
+      <WrapRow wrap={isDesktop} contentContainerStyle={styles.pillRow}>
         {SPECIES_LIST.map(s => (
           <TouchableOpacity
             key={s.value}
@@ -113,7 +117,7 @@ function AddAnimalInline({ onAdd }) {
             <Text style={[styles.pillLabel, species === s.value && styles.pillLabelActive]}>{s.label}</Text>
           </TouchableOpacity>
         ))}
-      </ScrollView>
+      </WrapRow>
 
       <TextInput style={[styles.input, { marginTop: 10 }]} placeholder="Name (e.g. Dotty)" placeholderTextColor={C.textSec} value={name} onChangeText={setName} />
       <TextInput style={[styles.input, { marginTop: 8 }]} placeholder="Primary colour (e.g. white, brown)" placeholderTextColor={C.textSec} value={color} onChangeText={setColor} />
@@ -321,6 +325,8 @@ export default function AccountScreen() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [followingOpen, setFollowingOpen] = useState(false);
 
+  const { isDesktop } = useBreakpoint();
+
   const myAnimals = registeredAnimals.filter(a => a.ownerId === currentUser?.id);
   const myPosts = posts.filter(p => p.userId === currentUser?.id);
   const followerCount = currentUser ? getFollowerCount(currentUser.id) : 0;
@@ -355,7 +361,10 @@ export default function AccountScreen() {
         title="Account"
         description="Manage your SheepFinder profile, registered animals and sighting alerts."
       />
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[styles.scroll, isDesktop && styles.scrollDesktop]}
+        showsVerticalScrollIndicator={false}
+      >
 
         {/* Profile header */}
         <View style={styles.profileHeader}>
@@ -545,8 +554,12 @@ export default function AccountScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
-  scroll: { padding: 20 },
-  authScroll: { padding: 24, flexGrow: 1 },
+  scroll: { padding: 20, width: '100%', maxWidth: NARROW_MAX_WIDTH, alignSelf: 'center' },
+  scrollDesktop: { paddingTop: 40, paddingBottom: 64 },
+  authScroll: {
+    padding: 24, flexGrow: 1,
+    width: '100%', maxWidth: NARROW_MAX_WIDTH, alignSelf: 'center',
+  },
 
   authHero: { alignItems: 'center', paddingTop: 16, paddingBottom: 28, gap: 6 },
   authLogoWrap: {

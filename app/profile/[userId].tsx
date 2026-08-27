@@ -9,6 +9,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useApp, SPECIES_LIST, timeAgo } from '@/store/app-store';
 import { C } from '@/constants/colors';
 import { PageHead } from '@/components/page-head';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
+import { NARROW_MAX_WIDTH } from '@/constants/layout';
 
 const TABS = ['Posts', 'Animals'];
 
@@ -25,7 +27,7 @@ function GridItem({ post }) {
   const isResolved = post.isSighting && post.sightingStatus === 'resolved';
 
   return (
-    <View style={styles.gridItem}>
+    <View style={styles.gridItem} dataSet={{ hoverable: 'card' }}>
       {post.photo ? (
         <Image source={{ uri: post.photo }} style={styles.gridPhoto} />
       ) : (
@@ -46,6 +48,7 @@ export default function ProfileScreen() {
   const { userId } = useLocalSearchParams();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { isDesktop } = useBreakpoint();
   const {
     currentUser, posts, registeredAnimals,
     toggleFollow, isFollowing, getFollowerCount, getFollowingCount, getUserById,
@@ -183,10 +186,11 @@ export default function ProfileScreen() {
     );
   }
 
-  // Posts grid
+  // Posts grid — 2 tiles per row on a phone, 3 once there is room for them.
+  const perRow = isDesktop ? 3 : 2;
   const rows = [];
-  for (let i = 0; i < userPosts.length; i += 2) {
-    rows.push(userPosts.slice(i, i + 2));
+  for (let i = 0; i < userPosts.length; i += perRow) {
+    rows.push(userPosts.slice(i, i + perRow));
   }
 
   return (
@@ -205,7 +209,9 @@ export default function ProfileScreen() {
             {rows.map((row, ri) => (
               <View key={ri} style={styles.gridRow}>
                 {row.map(post => <GridItem key={post.id} post={post} />)}
-                {row.length === 1 && <View style={styles.gridItemSpacer} />}
+                {Array.from({ length: perRow - row.length }).map((_, i) => (
+                  <View key={`spacer-${i}`} style={styles.gridItemSpacer} />
+                ))}
               </View>
             ))}
           </View>
@@ -218,7 +224,10 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
-  scrollContent: { paddingBottom: 20 },
+  scrollContent: {
+    paddingBottom: 20,
+    width: '100%', maxWidth: NARROW_MAX_WIDTH, alignSelf: 'center',
+  },
   animalsScroll: { padding: 20 },
 
   backBtn: { paddingHorizontal: 20, paddingVertical: 12 },

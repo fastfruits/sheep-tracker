@@ -13,11 +13,15 @@ import { useDialog } from '@/lib/platform/dialog';
 import { pickImage } from '@/lib/platform/image-picker';
 import { reverseGeocode } from '@/lib/platform/location';
 import { PageHead } from '@/components/page-head';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
+import { WrapRow } from '@/components/wrap-row';
+import { NARROW_MAX_WIDTH } from '@/constants/layout';
 
 export default function ReportScreen() {
   const insets = useSafeAreaInsets();
   const { submitSighting } = useApp();
   const dialog = useDialog();
+  const { isDesktop } = useBreakpoint();
 
   const [photo, setPhoto] = useState(null);
   const [photoBase64, setPhotoBase64] = useState(null);
@@ -145,7 +149,7 @@ export default function ReportScreen() {
       />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
-          contentContainerStyle={styles.scroll}
+          contentContainerStyle={[styles.scroll, isDesktop && styles.scrollDesktop]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
@@ -174,7 +178,7 @@ export default function ReportScreen() {
 
           {/* Species */}
           <Text style={styles.label}>Animal type <Text style={styles.req}>*</Text></Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pillRow}>
+          <WrapRow wrap={isDesktop} contentContainerStyle={styles.pillRow}>
             {SPECIES_LIST.map(s => (
               <TouchableOpacity
                 key={s.value}
@@ -186,7 +190,7 @@ export default function ReportScreen() {
                 <Text style={[styles.pillLabel, species === s.value && styles.pillLabelActive]}>{s.label}</Text>
               </TouchableOpacity>
             ))}
-          </ScrollView>
+          </WrapRow>
 
           {/* Colour */}
           <Text style={styles.label}>Primary colour <Text style={styles.req}>*</Text></Text>
@@ -255,7 +259,9 @@ export default function ReportScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
-  scroll: { padding: 20 },
+  // Forms read better narrow, so this page clamps tighter than the feed.
+  scroll: { padding: 20, width: '100%', maxWidth: NARROW_MAX_WIDTH, alignSelf: 'center' },
+  scrollDesktop: { paddingTop: 40, paddingBottom: 64 },
   pageTitle: { fontSize: 28, fontWeight: '800', color: C.text, letterSpacing: -0.5, marginBottom: 6 },
   pageSub: { fontSize: 14, color: C.textSec, lineHeight: 21, marginBottom: 24 },
 
@@ -311,7 +317,10 @@ const styles = StyleSheet.create({
   },
   btnSubmitText: { color: '#FFF', fontSize: 17, fontWeight: '800', letterSpacing: 0.2 },
 
-  successWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 28 },
+  successWrap: {
+    flex: 1, justifyContent: 'center', alignItems: 'center', padding: 28,
+    width: '100%', maxWidth: NARROW_MAX_WIDTH, alignSelf: 'center',
+  },
   successIconWrap: {
     width: 80, height: 80, borderRadius: 40, backgroundColor: C.greenLight,
     justifyContent: 'center', alignItems: 'center', marginBottom: 20,

@@ -1,0 +1,92 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Web-only polish.
+
+   react-native-web can't express :hover, :focus-visible, ::selection or custom
+   scrollbars through StyleSheet, so the behaviours that make a page feel like a
+   website rather than a phone app live here as real CSS. Loaded only in the web
+   bundle (see lib/platform/global-styles.web.ts).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+}
+
+/* RNW renders every Text as a div with user-select disabled in places. On a
+   website people expect to be able to select and copy text. */
+[dir="auto"] {
+  user-select: text;
+}
+
+/* ── Pointer affordances ─────────────────────────────────────────────────── */
+
+[role="button"] {
+  transition: opacity 140ms ease, background-color 140ms ease, border-color 140ms ease, transform 140ms ease;
+}
+
+/* Only on real pointers — avoids sticky hover states on touch devices. */
+@media (hover: hover) and (pointer: fine) {
+  [role="button"]:hover {
+    opacity: 0.88;
+  }
+  [role="button"]:active {
+    transform: scale(0.985);
+  }
+
+  /* Post cards and grid tiles lift slightly. Tagged via RNW's `dataSet` prop. */
+  [data-hoverable="card"] {
+    transition: box-shadow 160ms ease, transform 160ms ease, border-color 160ms ease;
+  }
+  [data-hoverable="card"]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.09);
+  }
+
+  [data-hoverable="nav"]:hover {
+    background-color: #EBF5E6;
+  }
+}
+
+/* ── Keyboard accessibility ──────────────────────────────────────────────── */
+
+/* RNW sets outline:none on touchables, which leaves keyboard users with no
+   focus indicator. Restore one for keyboard navigation only. */
+:focus-visible {
+  outline: 2px solid #1B4D0E !important;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ── Selection and scrollbars ───────────────────────────────────────────── */
+
+::selection {
+  background-color: #1B4D0E;
+  color: #ffffff;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  ::-webkit-scrollbar {
+    width: 11px;
+    height: 11px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: rgba(17, 17, 17, 0.18);
+    border-radius: 6px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(17, 17, 17, 0.32);
+  }
+}
+
+/* Inputs inherit the page font instead of the browser default. */
+input,
+textarea,
+select {
+  font-family: inherit;
+}

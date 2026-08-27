@@ -13,6 +13,9 @@ import { useDialog } from '@/lib/platform/dialog';
 import { pickImage } from '@/lib/platform/image-picker';
 import { shareText } from '@/lib/platform/share';
 import { PageHead } from '@/components/page-head';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
+import { WrapRow } from '@/components/wrap-row';
+import { CONTENT_MAX_WIDTH } from '@/constants/layout';
 
 const FILTERS = [
   { key: 'All', label: 'All' },
@@ -33,7 +36,7 @@ function stringToColor(str) {
   return colors[Math.abs(h) % colors.length];
 }
 
-function PostCard({ post, currentUserId, onLike, onAddComment, onConfirm, onShare, onReunite }) {
+function PostCard({ post, currentUserId, onLike, onAddComment, onConfirm, onShare, onReunite, cardStyle }) {
   const router = useRouter();
   const dialog = useDialog();
   const [commentOpen, setCommentOpen] = useState(false);
@@ -65,7 +68,7 @@ function PostCard({ post, currentUserId, onLike, onAddComment, onConfirm, onShar
   };
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, cardStyle]} dataSet={{ hoverable: 'card' }}>
       {isEscaped && (
         <View style={styles.escapedBanner}>
           <Text style={styles.escapedBannerText}>🚨  Escaped Animal — Help needed!</Text>
@@ -209,6 +212,8 @@ export default function GalleryScreen() {
   const insets = useSafeAreaInsets();
   const { posts, currentUser, toggleLike, addComment, addCommunityPost, toggleConfirmation, markReunited, refreshPosts } = useApp();
   const dialog = useDialog();
+  const { isDesktop, isWide } = useBreakpoint();
+  const columns = isWide ? 2 : 1;
   const [filter, setFilter] = useState('All');
   const [sort, setSort] = useState('newest');
   const [search, setSearch] = useState('');
@@ -305,8 +310,9 @@ export default function GalleryScreen() {
         title="Community"
         description="Recent escaped-animal sightings and photos shared by the SheepFinder community."
       />
+      <View style={[styles.page, isDesktop && styles.pageDesktop]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, isDesktop && styles.headerDesktop]}>
         <View>
           <Text style={styles.headerTitle}>Community</Text>
           <Text style={styles.headerSub}>
@@ -319,7 +325,7 @@ export default function GalleryScreen() {
       </View>
 
       {/* Search bar */}
-      <View style={styles.searchRow}>
+      <View style={[styles.searchRow, isDesktop && styles.searchRowDesktop]}>
         <View style={styles.searchBox}>
           <Text style={styles.searchIcon}>🔍</Text>
           <TextInput
@@ -355,7 +361,7 @@ export default function GalleryScreen() {
       )}
 
       {/* Filter tabs */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+      <WrapRow wrap={isDesktop} contentContainerStyle={[styles.filterRow, isDesktop && styles.filterRowDesktop]}>
         {FILTERS.map(f => (
           <TouchableOpacity
             key={f.key}
@@ -366,11 +372,15 @@ export default function GalleryScreen() {
             <Text style={[styles.filterText, filter === f.key && styles.filterTextActive]}>{f.label}</Text>
           </TouchableOpacity>
         ))}
-      </ScrollView>
+      </WrapRow>
 
       <FlatList
         data={filtered}
         keyExtractor={p => p.id}
+        // numColumns cannot change on a mounted FlatList, so remount on change.
+        key={`cols-${columns}`}
+        numColumns={columns}
+        columnWrapperStyle={columns > 1 ? styles.feedRow : undefined}
         renderItem={({ item }) => (
           <PostCard
             post={item}
@@ -380,9 +390,10 @@ export default function GalleryScreen() {
             onConfirm={toggleConfirmation}
             onShare={handleShare}
             onReunite={markReunited}
+            cardStyle={columns > 1 ? styles.cardColumn : undefined}
           />
         )}
-        contentContainerStyle={styles.feed}
+        contentContainerStyle={[styles.feed, isDesktop && styles.feedDesktop]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         refreshControl={
@@ -412,6 +423,8 @@ export default function GalleryScreen() {
           </View>
         }
       />
+
+      </View>
 
       {/* Share modal */}
       <Modal visible={modalOpen} animationType="slide" onRequestClose={() => setModalOpen(false)}>
@@ -477,17 +490,21 @@ export default function GalleryScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
+  page: { flex: 1, width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center' },
+  pageDesktop: { paddingHorizontal: 24, paddingTop: 28 },
 
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingTop: 4, paddingBottom: 10,
   },
+  headerDesktop: { paddingHorizontal: 0, paddingBottom: 18 },
   headerTitle: { fontSize: 28, fontWeight: '800', color: C.text, letterSpacing: -0.5 },
   headerSub: { fontSize: 13, color: C.textSec, marginTop: 1 },
   shareBtn: { backgroundColor: C.green, paddingHorizontal: 18, paddingVertical: 9, borderRadius: 100 },
   shareBtnText: { color: '#FFF', fontWeight: '800', fontSize: 14 },
 
   searchRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginBottom: 10, alignItems: 'center' },
+  searchRowDesktop: { paddingHorizontal: 0, marginBottom: 16 },
   searchBox: {
     flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8,
     backgroundColor: C.card, borderRadius: 12, borderWidth: 1.5,
@@ -517,6 +534,7 @@ const styles = StyleSheet.create({
   sortCheck: { fontSize: 15, color: C.green, fontWeight: '800' },
 
   filterRow: { paddingHorizontal: 16, paddingBottom: 10, gap: 8, alignItems: 'center' },
+  filterRowDesktop: { paddingHorizontal: 0, paddingBottom: 20 },
   filterPill: {
     paddingHorizontal: 16, paddingVertical: 8, borderRadius: 100,
     backgroundColor: C.card, borderWidth: 1.5, borderColor: C.border, flexShrink: 0,
@@ -526,6 +544,9 @@ const styles = StyleSheet.create({
   filterTextActive: { color: '#FFF' },
 
   feed: { paddingHorizontal: 16, paddingBottom: 24, gap: 16 },
+  feedDesktop: { paddingHorizontal: 0, paddingBottom: 56 },
+  feedRow: { gap: 16, alignItems: 'flex-start' },
+  cardColumn: { flex: 1 },
 
   card: {
     backgroundColor: C.card, borderRadius: 18, overflow: 'hidden',
