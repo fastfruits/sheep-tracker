@@ -8,6 +8,8 @@ import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useApp } from '@/store/app-store';
+import { WebNav } from '@/components/web-nav';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
 
 function NotifBadge() {
   const { unreadCount, currentUser } = useApp();
@@ -22,54 +24,60 @@ function NotifBadge() {
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const tintColor = Colors[colorScheme ?? 'light'].tint;
+  const { isDesktop } = useBreakpoint();
 
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: '#1B4D0E',
-        tabBarButton: HapticTab,
-        tabBarStyle: {
-          borderTopColor: '#E4E2DA',
-          backgroundColor: '#FFFFFF',
-        },
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Report',
-          tabBarIcon: ({ color }) => (
-            <IconSymbol name="exclamationmark.triangle.fill" color={color} />
-          ),
+    <View style={styles.shell}>
+      {isDesktop && <WebNav />}
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarActiveTintColor: '#1B4D0E',
+          tabBarButton: HapticTab,
+          // On desktop the top nav takes over; a bottom tab bar on a wide
+          // screen is what makes a site read as a phone app.
+          tabBarStyle: isDesktop
+            ? { display: 'none' }
+            : { borderTopColor: '#E4E2DA', backgroundColor: '#FFFFFF' },
         }}
-      />
-      <Tabs.Screen
-        name="gallery"
-        options={{
-          title: 'Community',
-          tabBarIcon: ({ color }) => (
-            <IconSymbol name="photo.on.rectangle" color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="account"
-        options={{
-          title: 'Account',
-          tabBarIcon: ({ color }) => (
-            <View>
-              <IconSymbol name="person.fill" color={color} />
-              <NotifBadge />
-            </View>
-          ),
-        }}
-      />
-    </Tabs>
+      >
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: 'Report',
+            tabBarIcon: ({ color }) => (
+              <IconSymbol name="exclamationmark.triangle.fill" color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="gallery"
+          options={{
+            title: 'Community',
+            tabBarIcon: ({ color }) => (
+              <IconSymbol name="photo.on.rectangle" color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="account"
+          options={{
+            title: 'Account',
+            tabBarIcon: ({ color }) => (
+              <View>
+                <IconSymbol name="person.fill" color={color} />
+                <NotifBadge />
+              </View>
+            ),
+          }}
+        />
+      </Tabs>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  shell: { flex: 1 },
   badge: {
     position: 'absolute',
     top: -4,

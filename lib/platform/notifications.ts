@@ -1,4 +1,9 @@
 // @ts-nocheck
+/**
+ * Native push + local notifications. See `notifications.web.ts` for the browser
+ * stubs — on web, alerts surface in-app via the `notifications` table and the
+ * Account tab badge instead.
+ */
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
@@ -69,6 +74,8 @@ export interface PushMessage {
   priority?: 'default' | 'normal' | 'high';
 }
 
+const EXPO_PUSH_ENDPOINT = 'https://exp.host/--/api/v2/push/send';
+
 export async function sendExpoPushNotifications(messages: PushMessage[]): Promise<void> {
   if (!messages.length) return;
 
@@ -80,11 +87,18 @@ export async function sendExpoPushNotifications(messages: PushMessage[]): Promis
 
   await Promise.all(
     chunks.map(chunk =>
-      fetch('https://exp.host/--/expo-push-notification-handler', {
+      fetch(EXPO_PUSH_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify(chunk),
-      }).catch(() => {}) // Fire-and-forget; don't block the UI
+      })
+        .then(async res => {
+          if (!res.ok) {
+            console.warn('Expo push rejected:', res.status, await res.text().catch(() => ''));
+          }
+        })
+        // Fire-and-forget; a failed push must never block the UI.
+        .catch(e => console.warn('Expo push failed:', e?.message ?? e))
     )
   );
 }
@@ -127,4 +141,29 @@ export async function cancelReengagementNotification(): Promise<void> {
 /** Call on app foreground to reset the reengagement timer. */
 export async function resetReengagementTimer(): Promise<void> {
   await scheduleReengagementNotification();
+}
+
+// ── Tap handling ─────────────────────────────────────────────────────────────
+
+export type NotificationTapData = { type?: string } & Record<string, unknown>;
+
+/**
+ * Subscribe to notification taps. Returns an unsubscribe function.
+ * Keeps `expo-notifications` out of the router layout so the web build never
+ * imports it.
+ */
+export function subscribeToNotificationTaps(
+  onTap: (data: NotificationTapData) => void
+): () => void {
+  const received = Notifications.addNotificationReceivedListener(() => {
+    // Badge count updates automatically via expo-notifications
+  });
+  const response = Notifications.addNotificationResponseReceivedListener(r => {
+    onTap((r.notification.request.content.data ?? {}) as NotificationTapData);
+  });
+
+  return () => {
+    received.remove();
+    response.remove();
+  };
 }

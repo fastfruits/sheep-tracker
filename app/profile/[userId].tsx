@@ -2,28 +2,15 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  Image, ScrollView, Dimensions,
+  Image, ScrollView,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useApp, SPECIES_LIST, timeAgo } from '@/store/app-store';
-
-const { width } = Dimensions.get('window');
-const GRID_SIZE = (width - 48) / 2; // 2 cols, 16px padding each side + 16 gap
-
-const C = {
-  bg: '#F7F6F2',
-  card: '#FFFFFF',
-  green: '#1B4D0E',
-  greenLight: '#EBF5E6',
-  border: '#E4E2DA',
-  text: '#111111',
-  textSec: '#77776E',
-  red: '#D93025',
-  orange: '#E8531F',
-  escapedDot: '#E8531F',
-  resolvedDot: '#2D7A18',
-};
+import { C } from '@/constants/colors';
+import { PageHead } from '@/components/page-head';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
+import { NARROW_MAX_WIDTH } from '@/constants/layout';
 
 const TABS = ['Posts', 'Animals'];
 
@@ -40,7 +27,7 @@ function GridItem({ post }) {
   const isResolved = post.isSighting && post.sightingStatus === 'resolved';
 
   return (
-    <View style={styles.gridItem}>
+    <View style={styles.gridItem} dataSet={{ hoverable: 'card' }}>
       {post.photo ? (
         <Image source={{ uri: post.photo }} style={styles.gridPhoto} />
       ) : (
@@ -61,6 +48,7 @@ export default function ProfileScreen() {
   const { userId } = useLocalSearchParams();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { isDesktop } = useBreakpoint();
   const {
     currentUser, posts, registeredAnimals,
     toggleFollow, isFollowing, getFollowerCount, getFollowingCount, getUserById,
@@ -198,14 +186,16 @@ export default function ProfileScreen() {
     );
   }
 
-  // Posts grid
+  // Posts grid — 2 tiles per row on a phone, 3 once there is room for them.
+  const perRow = isDesktop ? 3 : 2;
   const rows = [];
-  for (let i = 0; i < userPosts.length; i += 2) {
-    rows.push(userPosts.slice(i, i + 2));
+  for (let i = 0; i < userPosts.length; i += perRow) {
+    rows.push(userPosts.slice(i, i + perRow));
   }
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
+      <PageHead title={user.name} description={`${user.name}'s sightings and animals on SheepFinder.`} />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {headerComponent}
         {userPosts.length === 0 ? (
@@ -219,7 +209,9 @@ export default function ProfileScreen() {
             {rows.map((row, ri) => (
               <View key={ri} style={styles.gridRow}>
                 {row.map(post => <GridItem key={post.id} post={post} />)}
-                {row.length === 1 && <View style={styles.gridItemSpacer} />}
+                {Array.from({ length: perRow - row.length }).map((_, i) => (
+                  <View key={`spacer-${i}`} style={styles.gridItemSpacer} />
+                ))}
               </View>
             ))}
           </View>
@@ -232,7 +224,10 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
-  scrollContent: { paddingBottom: 20 },
+  scrollContent: {
+    paddingBottom: 20,
+    width: '100%', maxWidth: NARROW_MAX_WIDTH, alignSelf: 'center',
+  },
   animalsScroll: { padding: 20 },
 
   backBtn: { paddingHorizontal: 20, paddingVertical: 12 },
@@ -286,11 +281,11 @@ const styles = StyleSheet.create({
   grid: { padding: 16, gap: 8 },
   gridRow: { flexDirection: 'row', gap: 8 },
   gridItem: {
-    width: GRID_SIZE, height: GRID_SIZE, borderRadius: 12,
+    flex: 1, aspectRatio: 1, borderRadius: 12,
     overflow: 'hidden', backgroundColor: C.card,
     borderWidth: 1, borderColor: C.border,
   },
-  gridItemSpacer: { width: GRID_SIZE },
+  gridItemSpacer: { flex: 1 },
   gridPhoto: { width: '100%', height: '100%', resizeMode: 'cover' },
   gridPhotoEmpty: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   gridEmoji: { fontSize: 48 },

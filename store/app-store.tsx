@@ -1,13 +1,12 @@
 // @ts-nocheck
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, authRedirectTo } from '@/lib/supabase';
 import {
   registerForPushNotificationsAsync,
   sendExpoPushNotifications,
   scheduleReengagementNotification,
   cancelReengagementNotification,
-} from '@/lib/pushNotifications';
-import * as FileSystem from 'expo-file-system';
+} from '@/lib/platform/notifications';
 
 export type Species = 'sheep' | 'cow' | 'goat' | 'pig' | 'horse' | 'dog' | 'cat' | 'chicken' | 'other';
 
@@ -109,23 +108,26 @@ function transformPost(row): Post {
   };
 }
 
-async function uploadPhoto(localUri: string): Promise<string | null> {
+/**
+ * Upload a picked image to the `photos` bucket and return its public URL.
+ *
+ * The image picker hands us base64 directly (see lib/platform/image-picker.ts),
+ * which works identically on web and native. The blob fallback covers any URI
+ * that arrives without it — `blob:`/`data:` on web, `file://` on native.
+ */
+async function uploadPhoto(localUri: string, base64?: string | null): Promise<string | null> {
   try {
-    // Normalize ph:// and other iOS asset URIs to a file the fetch API can read
-    let uri = localUri;
-    if (!uri.startsWith('file://')) {
-      const dest = FileSystem.cacheDirectory + `upload_${Date.now()}.jpg`;
-      await FileSystem.copyAsync({ from: uri, to: dest });
-      uri = dest;
-    }
+    const ext = localUri.split('.').pop()?.split('?')[0]?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+    const safeExt = ['jpg', 'jpeg', 'png', 'webp', 'heic'].includes(ext) ? ext : 'jpg';
+    const path = `${Date.now()}.${safeExt}`;
+    const contentType = `image/${safeExt === 'jpg' ? 'jpeg' : safeExt}`;
 
-    const ext = uri.split('.').pop()?.split('?')[0]?.toLowerCase() ?? 'jpg';
-    const path = `${Date.now()}.${ext}`;
-    const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
-    const byteArray = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+    const body: Uint8Array | Blob = base64
+      ? Uint8Array.from(atob(base64), c => c.charCodeAt(0))
+      : await (await fetch(localUri)).blob();
 
-    const { data, error } = await supabase.storage.from('photos').upload(path, byteArray, {
-      contentType: `image/${ext === 'jpg' ? 'jpeg' : ext}`,
+    const { data, error } = await supabase.storage.from('photos').upload(path, body, {
+      contentType,
       upsert: false,
     });
     if (error) { console.warn('Photo upload error:', error.message); return null; }
@@ -309,7 +311,13 @@ export function AppProvider({ children }) {
     setAuthLoading(true);
     setAuthError(null);
 
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      // On web, send confirmation emails back to the site rather than the
+      // mysheeptracker:// scheme, which a browser cannot open.
+      options: { emailRedirectTo: authRedirectTo() },
+    });
     if (error) { setAuthError(error.message); setAuthLoading(false); return; }
 
     const userId = data.user?.id;
@@ -375,7 +383,7 @@ export function AppProvider({ children }) {
     // Upload photo first if present
     let photoUrl: string | null = null;
     if (data.photo && !data.photo.startsWith('http')) {
-      photoUrl = await uploadPhoto(data.photo);
+      photoUrl = await uploadPhoto(data.photo, data.photoBase64);
     }
 
     const caption = data.caption || `Spotted a ${SPECIES_LIST.find(s => s.value === data.species)?.label ?? data.species} near ${data.locationLabel ?? 'unknown location'}`;
@@ -463,7 +471,7 @@ export function AppProvider({ children }) {
 
     let photoUrl: string | null = null;
     if (data.photo && !data.photo.startsWith('http')) {
-      photoUrl = await uploadPhoto(data.photo);
+      photoUrl = await uploadPhoto(data.photo, data.photoBase64);
     }
 
     const { data: row, error } = await supabase
