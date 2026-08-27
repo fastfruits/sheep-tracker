@@ -3,12 +3,13 @@ import React, { useEffect } from 'react';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { AppState, StyleSheet, View } from 'react-native';
+import { AppState } from 'react-native';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AppProvider } from '@/store/app-store';
 import { DialogProvider } from '@/lib/platform/dialog';
-import { CONTENT_MAX_WIDTH } from '@/constants/layout';
+import '@/lib/platform/global-styles';
+import { C } from '@/constants/colors';
 import { resetReengagementTimer, subscribeToNotificationTaps } from '@/lib/platform/notifications';
 
 export const unstable_settings = {
@@ -52,26 +53,13 @@ export default function RootLayout() {
       <DialogProvider>
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
           <NotificationHandler />
-          {/* Clamp to a phone-ish column so the site is readable on a desktop
-              browser. No-op on phones, which are all narrower than the max. */}
-          <View style={styles.shell}>
-            <Stack>
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="profile/[userId]" options={{ headerShown: false }} />
-            </Stack>
-          </View>
+          <Stack screenOptions={{ contentStyle: { backgroundColor: C.bg } }}>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="profile/[userId]" options={{ headerShown: false }} />
+          </Stack>
           <StatusBar style="dark" />
         </ThemeProvider>
       </DialogProvider>
     </AppProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  shell: {
-    flex: 1,
-    width: '100%',
-    maxWidth: CONTENT_MAX_WIDTH,
-    alignSelf: 'center',
-  },
-});
