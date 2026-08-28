@@ -1,60 +1,82 @@
-# SheepFinder (Sheep Tracker)
+# SheepFinder
 
-SheepFinder is a lightweight mobile app that helps farmers locate lost or strayed sheep. Users can capture a photo, tag the location, and submit a report with an on-map marker to make recovery faster and easier.
+Report escaped livestock. Farmers register their animals; when someone reports a
+sighting whose description matches, the owner is alerted with the reporter's
+location.
 
-## What This App Does
+Next.js App Router · React Server Components · Supabase · Tailwind v4 + shadcn/ui.
 
-- Capture a sheep photo from the camera
-- Grab the current GPS location
-- Create a report marker for quick discovery
-- Simple, fast flow designed for field use
-
-## Current Status
-
-Early prototype. Camera and location capture are implemented; storage, map view, and reporting workflows are in progress.
-
-## Getting Started
-
-1. Install dependencies
+## Getting started
 
 ```bash
 npm install
+cp .env.example .env   # then fill it in
+npm run dev
 ```
 
-2. Start the app
+### Environment
+
+| Variable | Where | Notes |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | client + server | Inlined into the JS bundle. Public by design. |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | client + server | Also public. RLS is what protects the data, not this key. |
+| `SUPABASE_SERVICE_ROLE_KEY` | **server only** | No `NEXT_PUBLIC_` prefix. With one, Next.js inlines it into the client bundle and hands every visitor full database access. |
+
+The service-role key is used by the report action to match a sighting against
+every farmer's animals and to write notification rows addressed to other users —
+two things a visitor's own session must not be able to do.
+
+### Database
+
+Run in order, once per project:
 
 ```bash
-npx expo start
+supabase/schema.sql     # tables, storage bucket, RLS enabled (no policies)
+supabase/rls.sql        # the policies
+supabase/rls-web.sql    # tightening pass; requires the service-role key to be set
 ```
 
-3. Open on your phone
+`schema.sql` enables RLS but grants nothing, so the app cannot read anything
+until `rls.sql` runs. All three are safe to re-run.
 
-- Install **Expo Go** (or use a custom dev build)
-- Ensure your phone and computer are on the same Wi‑Fi
-- Scan the QR code shown by Expo
+### Supabase configuration
 
-## Permissions
+Authentication → URL Configuration:
 
-This app requests:
+- **Site URL** — your deployed origin
+- **Redirect URLs** — add `<origin>/auth/callback`
 
-- Camera access (to capture sheep photos)
-- Location access (to tag reports)
+Without the callback URL, confirmation emails dead-end and new accounts never
+get a profile row.
 
-## Project Structure
+## Architecture
 
-- `app/` — screens and routes (Expo Router)
-- `components/` — reusable UI
-- `assets/` — images and static files
-- `constants/` — theme and shared constants
+- `app/` — routes. Pages are Server Components; interactivity lives in small
+  client islands (`components/post-actions.tsx`, `follow-button.tsx`).
+- `app/actions/` — Server Actions. All writes go through these.
+- `lib/data/` — server-side queries. Import `server-only`.
+- `lib/supabase/` — `server.ts` (cookies), `client.ts` (browser),
+  `admin.ts` (service role, never import from a client component).
+- `lib/matching.ts` — sighting → animal match rules, ported from the previous
+  React Native build.
+- `proxy.ts` — refreshes the Supabase session on every request.
 
-## Roadmap
+Feed and profile pages render on the server so sightings appear in the HTML that
+search engines and link-preview bots receive. `/post/[id]` generates per-post
+Open Graph metadata.
 
-- Map view with report markers
-- Report list and details
-- Upload flow with notes and tags
-- Basic auth for trusted reporters
-- Farmer/owner notification flow
+## Deploying to Vercel
 
-## Contributing
+Framework Preset **Next.js** (auto-detected — there is deliberately no
+`vercel.json`). Set all three environment variables for Production *and*
+Preview.
 
-PRs and suggestions are welcome. If you’re proposing a change, include a short note on the use case and any UI/UX considerations.
+> If this project was previously deployed as the Expo build, change the
+> Framework Preset from **Other** to **Next.js** and clear the build-command and
+> output-directory overrides.
+
+## History
+
+This was an Expo / React Native app rendered to web via react-native-web. It is
+now web-only; the native build was removed. The React Native source remains in
+git history.
