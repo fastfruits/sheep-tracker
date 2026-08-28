@@ -40,6 +40,10 @@ function PostCard({ post, currentUserId, onLike, onAddComment, onConfirm, onShar
   const router = useRouter();
   const dialog = useDialog();
   const [commentOpen, setCommentOpen] = useState(false);
+  // The photos bucket contains 0-byte objects from a broken upload path: they
+  // serve as 200 image/jpeg with no body, so <Image> renders an empty grey box
+  // that looks like a layout bug. Fall back to the species emoji instead.
+  const [photoFailed, setPhotoFailed] = useState(false);
   const [commentText, setCommentText] = useState('');
   const isLiked = post.likes.includes(currentUserId ?? 'guest');
   const isConfirmed = post.confirmations.includes(currentUserId ?? 'guest');
@@ -85,8 +89,12 @@ function PostCard({ post, currentUserId, onLike, onAddComment, onConfirm, onShar
         </View>
       )}
 
-      {post.photo ? (
-        <Image source={{ uri: post.photo }} style={styles.cardPhoto} />
+      {post.photo && !photoFailed ? (
+        <Image
+          source={{ uri: post.photo }}
+          style={styles.cardPhoto}
+          onError={() => setPhotoFailed(true)}
+        />
       ) : (
         <View style={styles.cardPhotoEmpty}>
           <Text style={styles.cardPhotoEmoji}>{speciesInfo?.emoji ?? '🐾'}</Text>

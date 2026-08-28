@@ -97,7 +97,7 @@ function transformPost(row): Post {
       .map(c => ({
         id: c.id,
         userId: c.user_id,
-        userName: c.user_name,
+        userName: c.profiles?.name ?? 'Unknown',
         text: c.text,
         timestamp: new Date(c.created_at).getTime(),
       }))
@@ -125,6 +125,16 @@ async function uploadPhoto(localUri: string, base64?: string | null): Promise<st
     const body: Uint8Array | Blob = base64
       ? Uint8Array.from(atob(base64), c => c.charCodeAt(0))
       : await (await fetch(localUri)).blob();
+
+    // The storage bucket currently contains a 0-byte object written by an
+    // earlier version of this function. Supabase accepts an empty body and
+    // serves it as 200 image/jpeg with no content, so the failure is invisible
+    // until an <Image> silently renders nothing. Fail loudly instead.
+    const size = body instanceof Uint8Array ? body.byteLength : body.size;
+    if (!size) {
+      console.warn('Photo upload aborted: encoded image was empty', { localUri, hasBase64: !!base64 });
+      return null;
+    }
 
     const { data, error } = await supabase.storage.from('photos').upload(path, body, {
       contentType,
@@ -218,7 +228,7 @@ export function AppProvider({ children }) {
         profiles!posts_user_id_fkey(name),
         likes(user_id),
         confirmations(user_id),
-        comments(id, user_id, user_name, text, created_at)
+        comments(id, user_id, text, created_at, profiles!comments_user_id_fkey(name))
       `)
       .order('created_at', { ascending: false })
       .limit(100);
@@ -559,12 +569,25 @@ export function AppProvider({ children }) {
       p.id === postId ? { ...p, comments: [...p.comments, comment] } : p
     ));
 
-    const { data } = await supabase.from('comments').insert({
+    // No user_name column on this table — the display name is read back by
+    // joining profiles in loadPosts.
+    const { data, error } = await supabase.from('comments').insert({
       post_id: postId,
       user_id: user.id,
-      user_name: user.name,
       text,
     }).select('id').single();
+
+    if (error) {
+      console.warn('addComment error:', error.message);
+      // Roll the optimistic comment back so the UI doesn't show a comment that
+      // was never saved.
+      setPosts(prev => prev.map(p =>
+        p.id === postId
+          ? { ...p, comments: p.comments.filter(c => c.id !== comment.id) }
+          : p
+      ));
+      return;
+    }
 
     // Replace temp id with real id
     if (data) {
