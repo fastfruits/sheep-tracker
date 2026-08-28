@@ -17,6 +17,9 @@
 -- ═══════════════════════════════════════════════════════════════════════════
 
 -- ── Drop the permissive prototype policies ──────────────────────────────────
+-- ...and this file's own policies, so it is safe to re-run. Without these,
+-- a second run fails halfway with "policy already exists", leaving the
+-- database in a partially-applied state.
 drop policy if exists "open" on profiles;
 drop policy if exists "open" on animals;
 drop policy if exists "open" on posts;
@@ -26,6 +29,37 @@ drop policy if exists "open" on comments;
 drop policy if exists "open" on follows;
 drop policy if exists "open" on notifications;
 drop policy if exists "open" on storage.objects;
+
+drop policy if exists "profiles are publicly readable" on profiles;
+drop policy if exists "users insert their own profile" on profiles;
+drop policy if exists "users update their own profile" on profiles;
+drop policy if exists "animals are publicly readable" on animals;
+drop policy if exists "farmers manage their own animals" on animals;
+drop policy if exists "farmers update their own animals" on animals;
+drop policy if exists "farmers delete their own animals" on animals;
+drop policy if exists "posts are publicly readable" on posts;
+drop policy if exists "users create their own posts" on posts;
+drop policy if exists "authors update their own posts" on posts;
+drop policy if exists "authors delete their own posts" on posts;
+drop policy if exists "likes are publicly readable" on likes;
+drop policy if exists "users like as themselves" on likes;
+drop policy if exists "users remove their own likes" on likes;
+drop policy if exists "confirmations are publicly readable" on confirmations;
+drop policy if exists "users confirm as themselves" on confirmations;
+drop policy if exists "users remove their own confirmations" on confirmations;
+drop policy if exists "comments are publicly readable" on comments;
+drop policy if exists "users comment as themselves" on comments;
+drop policy if exists "users delete their own comments" on comments;
+drop policy if exists "follows are publicly readable" on follows;
+drop policy if exists "users follow as themselves" on follows;
+drop policy if exists "users unfollow as themselves" on follows;
+drop policy if exists "farmers read their own notifications" on notifications;
+drop policy if exists "signed-in users create notifications" on notifications;
+drop policy if exists "farmers update their own notifications" on notifications;
+drop policy if exists "photos are publicly readable" on storage.objects;
+drop policy if exists "signed-in users upload photos" on storage.objects;
+drop policy if exists "uploaders update their own photos" on storage.objects;
+drop policy if exists "uploaders delete their own photos" on storage.objects;
 
 alter table profiles      enable row level security;
 alter table animals       enable row level security;
