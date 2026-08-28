@@ -93,7 +93,20 @@ insert into storage.buckets (id, name, public)
 values ('photos', 'photos', true)
 on conflict (id) do nothing;
 
--- ── Row-level security (permissive for prototype) ────────────────────────────
+-- ── Row-level security ──────────────────────────────────────────────────────
+--
+-- Policies deliberately live in `rls.sql`, NOT here.
+--
+-- This file used to end with `create policy "open" ... for all using (true)`
+-- on every table, guarded by `if not exists (... policyname='open')`. Because
+-- rls.sql DROPS those policies, that guard passes on a re-run and recreates
+-- them. Postgres OR's permissive policies together, so a single re-run of this
+-- file silently reverted the entire database to world-readable and
+-- world-writable, with no error and nothing visible in the app.
+--
+-- Enabling RLS with no policy denies all access, which is the safe default:
+-- the database is locked until rls.sql grants something.
+
 alter table profiles      enable row level security;
 alter table animals       enable row level security;
 alter table posts         enable row level security;
@@ -103,30 +116,5 @@ alter table comments      enable row level security;
 alter table follows       enable row level security;
 alter table notifications enable row level security;
 
-do $$ begin
-  if not exists (select 1 from pg_policies where tablename='profiles'      and policyname='open') then
-    create policy "open" on profiles      for all using (true) with check (true); end if;
-  if not exists (select 1 from pg_policies where tablename='animals'       and policyname='open') then
-    create policy "open" on animals       for all using (true) with check (true); end if;
-  if not exists (select 1 from pg_policies where tablename='posts'         and policyname='open') then
-    create policy "open" on posts         for all using (true) with check (true); end if;
-  if not exists (select 1 from pg_policies where tablename='likes'         and policyname='open') then
-    create policy "open" on likes         for all using (true) with check (true); end if;
-  if not exists (select 1 from pg_policies where tablename='confirmations' and policyname='open') then
-    create policy "open" on confirmations for all using (true) with check (true); end if;
-  if not exists (select 1 from pg_policies where tablename='comments'      and policyname='open') then
-    create policy "open" on comments      for all using (true) with check (true); end if;
-  if not exists (select 1 from pg_policies where tablename='follows'       and policyname='open') then
-    create policy "open" on follows       for all using (true) with check (true); end if;
-  if not exists (select 1 from pg_policies where tablename='notifications' and policyname='open') then
-    create policy "open" on notifications for all using (true) with check (true); end if;
-end $$;
-
-do $$ begin
-  if not exists (
-    select 1 from pg_policies where schemaname='storage' and tablename='objects' and policyname='open'
-  ) then
-    create policy "open" on storage.objects for all
-      using (bucket_id = 'photos') with check (bucket_id = 'photos');
-  end if;
-end $$;
+-- NEXT STEP (required — the app cannot read anything until you do this):
+--   psql < supabase/rls.sql      or paste it into the Supabase SQL editor
