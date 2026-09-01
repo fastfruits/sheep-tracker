@@ -103,7 +103,7 @@ export default async function PostPage({ params }: PageProps<'/post/[id]'>) {
         )}
         {post.primaryColor && (
           <>
-            <dt className="font-semibold text-muted-foreground">Colour</dt>
+            <dt className="font-semibold text-muted-foreground">color</dt>
             <dd>{post.primaryColor}</dd>
           </>
         )}

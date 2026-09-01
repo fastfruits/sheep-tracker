@@ -78,7 +78,7 @@ export function PostCard({ post, currentUserId }: { post: Post; currentUserId?: 
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 rounded-xl bg-muted p-3 text-sm">
             {post.primaryColor && (
               <>
-                <dt className="font-semibold text-muted-foreground">Colour</dt>
+                <dt className="font-semibold text-muted-foreground">Color</dt>
                 <dd>{post.primaryColor}</dd>
               </>
             )}

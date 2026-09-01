@@ -1,0 +1,94 @@
+import Link from 'next/link';
+
+/** TODO: replace with the real support address before launch. */
+const CONTACT_EMAIL = 'nicholasahenry06@gmail.com';
+const REPO_URL = 'https://github.com/fastfruits/sheep-tracker';
+
+/**
+ * Site links are duplicated from `LINKS` in `nav-links.tsx` rather than shared:
+ * the nav needs client-side pathname matching, the footer is static. Keep the
+ * labels in step if either list changes.
+ */
+const COLUMNS = [
+  {
+    heading: 'Site',
+    links: [
+      { href: '/', label: 'Report a sighting' },
+      { href: '/feed', label: 'Community' },
+      { href: '/account', label: 'Account' },
+    ],
+  },
+  {
+    heading: 'About',
+    links: [
+      { href: '/about', label: 'About SheepFinder' },
+      { href: '/privacy', label: 'Privacy' },
+      { href: '/terms', label: 'Terms' },
+    ],
+  },
+];
+
+const linkClass = 'text-sm text-muted-foreground transition-colors hover:text-brand';
+
+export function SiteFooter() {
+  return (
+    <footer className="mt-16 border-t border-border bg-card">
+      <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
+        <div className="grid gap-8 sm:grid-cols-2 md:grid-cols-4">
+          <div className="sm:col-span-2 md:col-span-1">
+            <Link href="/" className="flex items-center gap-2 font-extrabold tracking-tight">
+              <span aria-hidden className="text-xl">🐑</span>
+              <span className="text-lg text-brand">SheepFinder</span>
+            </Link>
+            <p className="mt-2 max-w-xs text-sm text-muted-foreground">
+              Reuniting animals with their owners.
+            </p>
+          </div>
+
+          <nav aria-label="Footer" className="grid gap-8 sm:col-span-2 sm:grid-cols-3 md:col-span-3">
+            {COLUMNS.map(column => (
+              <div key={column.heading}>
+                <h2 className="text-sm font-semibold">{column.heading}</h2>
+                <ul className="mt-3 space-y-2">
+                  {column.links.map(link => (
+                    <li key={link.href}>
+                      <Link href={link.href} className={linkClass}>
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+
+            <div>
+              <h2 className="text-sm font-semibold">Contact</h2>
+              <ul className="mt-3 space-y-2">
+                <li>
+                  <a href={`mailto:${CONTACT_EMAIL}`} className={linkClass}>
+                    {CONTACT_EMAIL}
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href={REPO_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={linkClass}
+                  >
+                    GitHub
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </nav>
+        </div>
+
+        <div className="mt-10 border-t border-border pt-6 text-xs text-muted-foreground">
+          {/* Static routes bake this in at build time, which is fine for a copyright line. */}
+          <p>&copy; {new Date().getFullYear()} SheepFinder. All rights reserved.</p>
+        </div>
+      </div>
+    </footer>
+  );
+}

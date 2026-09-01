@@ -185,7 +185,7 @@ export function ReportForm({ signedIn }: { signedIn: boolean }) {
 
       <div>
         <Label htmlFor="primaryColor">
-          Primary colour <span className="text-destructive">*</span>
+          Primary color <span className="text-destructive">*</span>
         </Label>
         <Input id="primaryColor" name="primaryColor" required className="mt-2"
           placeholder="e.g. white, brown, black and white" />

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 
+import { SiteFooter } from '@/components/site-footer';
 import { SiteNav } from '@/components/site-nav';
 import { Toaster } from '@/components/ui/sonner';
 
@@ -28,6 +29,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <SiteNav />
         <main className="flex-1">{children}</main>
+        <SiteFooter />
         <Toaster position="top-center" />
       </body>
     </html>
