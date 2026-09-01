@@ -8,8 +8,8 @@ export interface SightingDescription {
 /**
  * Decide which registered animals a sighting might be.
  *
- * Ported verbatim from `submitSighting` in the React Native build so behaviour
- * is unchanged: same species, and colours that overlap in either direction or
+ * Ported verbatim from `submitSighting` in the React Native build so behavior
+ * is unchanged: same species, and colors that overlap in either direction or
  * share a word longer than two characters ("black and white" matches "white").
  *
  * This used to run in the browser over every animal in the database, which is

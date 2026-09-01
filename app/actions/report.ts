@@ -49,7 +49,7 @@ export async function reportSighting(formData: FormData): Promise<ReportResult> 
   const longitude = formData.get('longitude') ? Number(formData.get('longitude')) : null;
 
   if (!species) return { ok: false, error: 'Choose the type of animal.' };
-  if (!primaryColor) return { ok: false, error: "Describe the animal's colour." };
+  if (!primaryColor) return { ok: false, error: "Describe the animal's color." };
 
   const photo = formData.get('photo');
   const photoUrl = photo instanceof File ? await uploadPhoto(photo) : null;

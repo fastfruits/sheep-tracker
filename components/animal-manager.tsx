@@ -85,7 +85,7 @@ export function AnimalManager({ animals }: { animals: RegisteredAnimal[] }) {
             ))}
           </div>
           <Input placeholder="Name (e.g. Dotty)" value={name} onChange={e => setName(e.target.value)} />
-          <Input placeholder="Primary colour" value={color} onChange={e => setColor(e.target.value)} />
+          <Input placeholder="Primary color" value={color} onChange={e => setColor(e.target.value)} />
           <Textarea placeholder="Markings (e.g. blue ear tag #42)" value={markings} onChange={e => setMarkings(e.target.value)} />
           <Input placeholder="Tag/ear number (optional)" value={tagNumber} onChange={e => setTagNumber(e.target.value)} />
           <div className="flex gap-2">

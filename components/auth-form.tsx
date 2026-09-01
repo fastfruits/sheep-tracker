@@ -185,7 +185,7 @@ function AnimalStep({
   function add() {
     if (!species) { toast.error('Select an animal type'); return; }
     if (!name.trim()) { toast.error("Enter the animal's name"); return; }
-    if (!color.trim()) { toast.error('Describe the primary colour'); return; }
+    if (!color.trim()) { toast.error('Describe the primary color'); return; }
     setAnimals([...animals, {
       species: species as SignupAnimal['species'],
       name: name.trim(),
@@ -247,7 +247,7 @@ function AnimalStep({
           ))}
         </div>
         <Input placeholder="Name (e.g. Dotty)" value={name} onChange={e => setName(e.target.value)} />
-        <Input placeholder="Primary colour (e.g. white, brown)" value={color} onChange={e => setColor(e.target.value)} />
+        <Input placeholder="Primary color (e.g. white, brown)" value={color} onChange={e => setColor(e.target.value)} />
         <Textarea placeholder="Markings (e.g. blue ear tag #42)" value={markings} onChange={e => setMarkings(e.target.value)} />
         <Input placeholder="Tag/ear number (optional)" value={tagNumber} onChange={e => setTagNumber(e.target.value)} />
         <Button type="button" variant="outline" className="w-full" onClick={add}>+ Add to list</Button>

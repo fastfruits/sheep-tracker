@@ -96,7 +96,7 @@ export async function registerAnimal(input: {
   if (!user) return { ok: false, error: 'Sign in first.' };
   if (!input.species) return { ok: false, error: 'Select an animal type.' };
   if (!input.name.trim()) return { ok: false, error: "Enter the animal's name." };
-  if (!input.primaryColor.trim()) return { ok: false, error: 'Describe the primary colour.' };
+  if (!input.primaryColor.trim()) return { ok: false, error: 'Describe the primary color.' };
 
   const { error } = await supabase.from('animals').insert({
     owner_id: user.id,
