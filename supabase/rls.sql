@@ -1,4 +1,12 @@
 -- ═══════════════════════════════════════════════════════════════════════════
+-- NOTE: hand-run file for the HOSTED project. The local CLI stack gets its
+-- policies from supabase/migrations/ instead, which carries only the final
+-- set (i.e. after rls-web.sql's tightening pass). Running this file against a
+-- local stack would restore the loose `animals` and `notifications` policies
+-- that rls-web.sql exists to remove.
+-- ═══════════════════════════════════════════════════════════════════════════
+
+-- ═══════════════════════════════════════════════════════════════════════════
 -- Row-level security policies for SheepFinder.
 --
 -- Replaces the prototype `create policy "open" ... for all using (true)` rules

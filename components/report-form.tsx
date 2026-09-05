@@ -91,16 +91,34 @@ export function ReportForm({ signedIn }: { signedIn: boolean }) {
 
         {result.matched && result.matched.length > 0 && (
           <div className="mx-auto mt-6 max-w-md rounded-2xl border-2 border-amber-note-border bg-amber-note-bg p-5 text-left">
-            <p className="font-extrabold">🔔 Farmer notified!</p>
+            {/* Only claim delivery when the alert rows were actually written.
+                `matched` says what the animal probably is; `alertDelivered`
+                says whether anyone was told. */}
+            <p className="font-extrabold">
+              {result.alertDelivered ? '🔔 Farmer notified!' : "⚠️ Couldn't reach the owner"}
+            </p>
             <ul className="mt-2 space-y-2 text-sm">
               {result.matched.map(m => (
                 <li key={m.id}>
                   <span className="font-bold">{m.name}</span> — {m.ownerName}
-                  {m.farmName ? ` · ${m.farmName}` : ''} has been sent your report
-                  {locationLabel ? ` and your location (${locationLabel})` : ''}.
+                  {m.farmName ? ` · ${m.farmName}` : ''}
+                  {result.alertDelivered ? (
+                    <>
+                      {' '}has been sent your report
+                      {locationLabel ? ` and your location (${locationLabel})` : ''}.
+                    </>
+                  ) : (
+                    <> looks like a match, but we couldn&apos;t send the alert.</>
+                  )}
                 </li>
               ))}
             </ul>
+            {!result.alertDelivered && (
+              <p className="mt-3 text-sm text-muted-foreground">
+                Your sighting is still in the community feed, so the owner can
+                find it there.
+              </p>
+            )}
           </div>
         )}
 

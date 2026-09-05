@@ -2,17 +2,22 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
-import { createAdminClient } from '@/lib/supabase/admin';
-import { matchAnimals } from '@/lib/matching';
+import { notifyMatchingFarmers, type MatchedAnimal } from '@/lib/notify';
 import { speciesLabel } from '@/lib/species';
-import type { RegisteredAnimal, Species } from '@/lib/types';
+import type { Species } from '@/lib/types';
 
 export interface ReportResult {
   ok: boolean;
   error?: string;
   postId?: string;
   /** Names of registered animals this sighting might be. */
-  matched?: { id: string; name: string; ownerName: string; farmName?: string }[];
+  matched?: MatchedAnimal[];
+  /**
+   * Whether the alert rows were actually written. `matched` can be non-empty
+   * while this is false — the match was real but the write failed — and the UI
+   * must not claim the farmer was notified in that case.
+   */
+  alertDelivered?: boolean;
 }
 
 /** Uploads to the `photos` bucket as the signed-in user, so storage RLS applies. */
@@ -86,12 +91,11 @@ export async function reportSighting(formData: FormData): Promise<ReportResult> 
   }
 
   // ── Match against every registered animal, server-side ──
-  // This is why `animals` no longer needs a public read policy: matching used
-  // to happen in the browser, which required shipping every farmer's inventory
-  // to every visitor. The admin client reads across owners; the user's own
-  // session cannot.
-  const matched = await notifyMatchingFarmers({
+  // Lives in lib/notify.ts so it can be tested without a request context; see
+  // the note at the top of that file.
+  const alert = await notifyMatchingFarmers({
     postId: post.id,
+    reporterId: user.id,
     species,
     primaryColor,
     reporterName,
@@ -104,72 +108,10 @@ export async function reportSighting(formData: FormData): Promise<ReportResult> 
   revalidatePath('/feed');
   revalidatePath('/account');
 
-  return { ok: true, postId: post.id, matched };
-}
-
-async function notifyMatchingFarmers(input: {
-  postId: string;
-  species: Species;
-  primaryColor: string;
-  reporterName: string;
-  caption: string;
-  locationLabel: string | null;
-  latitude: number | null;
-  longitude: number | null;
-}) {
-  let admin;
-  try {
-    admin = createAdminClient();
-  } catch (e) {
-    // Without the service-role key we cannot match or notify. The sighting is
-    // still saved and visible in the feed; only the farmer alert is skipped.
-    console.error('matching skipped:', (e as Error).message);
-    return [];
-  }
-
-  const { data: rows } = await admin
-    .from('animals')
-    .select('*, profiles!animals_owner_id_fkey(name, farm_name)')
-    .eq('species', input.species);
-
-  const animals: RegisteredAnimal[] = (rows ?? []).map(a => ({
-    id: a.id,
-    ownerId: a.owner_id,
-    ownerName: a.profiles?.name ?? 'Unknown',
-    farmName: a.profiles?.farm_name ?? undefined,
-    species: a.species,
-    name: a.name,
-    primaryColor: a.primary_color,
-    markings: a.markings,
-    tagNumber: a.tag_number ?? undefined,
-  }));
-
-  const matches = matchAnimals(
-    { species: input.species, primaryColor: input.primaryColor },
-    animals
-  );
-  if (matches.length === 0) return [];
-
-  const { error } = await admin.from('notifications').insert(
-    matches.map(animal => ({
-      farmer_id: animal.ownerId,
-      post_id: input.postId,
-      animal_id: animal.id,
-      animal_name: animal.name,
-      species: animal.species,
-      reporter_name: input.reporterName,
-      reporter_caption: input.caption,
-      location_label: input.locationLabel,
-      latitude: input.latitude,
-      longitude: input.longitude,
-    }))
-  );
-  if (error) console.error('notifications insert:', error.message);
-
-  return matches.map(m => ({
-    id: m.id,
-    name: m.name,
-    ownerName: m.ownerName,
-    farmName: m.farmName,
-  }));
+  return {
+    ok: true,
+    postId: post.id,
+    matched: alert.matched,
+    alertDelivered: alert.notified > 0,
+  };
 }

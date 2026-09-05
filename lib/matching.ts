@@ -20,7 +20,13 @@ export function matchAnimals(
   sighting: SightingDescription,
   animals: RegisteredAnimal[]
 ): RegisteredAnimal[] {
-  const reported = (sighting.primaryColor || '').toLowerCase();
+  const reported = (sighting.primaryColor || '').trim().toLowerCase();
+
+  // Without this guard an empty colour matches *every* animal of the species,
+  // because `registered.includes('')` is always true — so one blank field would
+  // alert every farmer who keeps sheep. The report action validates the field,
+  // but this function is exported and must not depend on its callers.
+  if (!reported) return [];
 
   return animals.filter(animal => {
     if (animal.species !== sighting.species) return false;

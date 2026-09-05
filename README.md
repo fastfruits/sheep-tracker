@@ -28,16 +28,39 @@ two things a visitor's own session must not be able to do.
 
 ### Database
 
-Run in order, once per project:
+**Local development and tests** use the Supabase CLI stack, built from
+`supabase/migrations/`:
+
+```bash
+npm run db:start     # docker required; ~60s on the first run
+npm run db:seed      # farmer@example.test + reporter@example.test, password test-password-123
+npm run dev:local    # next dev pointed at the local stack instead of the hosted project
+npm run db:reset     # drop, replay migrations, re-seed
+npm run db:stop
+```
+
+`npm run dev` still points at the hosted project via `.env`; `dev:local`
+injects the local stack's credentials instead, so the two never get confused.
+
+**The hosted project** predates the migrations and is still managed by the
+hand-run files, in order, once per project:
 
 ```bash
 supabase/schema.sql     # tables, storage bucket, RLS enabled (no policies)
 supabase/rls.sql        # the policies
-supabase/rls-web.sql    # tightening pass; requires the service-role key to be set
+supabase/rls-web.sql    # tightening pass; requires the service-role key
 ```
 
 `schema.sql` enables RLS but grants nothing, so the app cannot read anything
 until `rls.sql` runs. All three are safe to re-run.
+
+> **Outstanding repair.** The hosted `notifications` table is missing the seven
+> detail columns the report action writes, so farmer alerts have been failing
+> there silently. Apply `supabase/fix-notifications-columns.sql` once — it is
+> additive and idempotent. The local stack already has them.
+
+Local and hosted are therefore two sources of truth. `supabase/schema.sql` and
+`supabase/rls.sql` carry headers describing the known divergences.
 
 ### Supabase configuration
 
@@ -64,6 +87,32 @@ get a profile row.
 Feed and profile pages render on the server so sightings appear in the HTML that
 search engines and link-preview bots receive. `/post/[id]` generates per-post
 Open Graph metadata.
+
+## Testing
+
+```bash
+npm test           # unit tests only — no docker needed
+npm run test:unit  # unit + integration (needs `npm run db:start`)
+npm run typecheck
+npm run lint
+```
+
+- `tests/unit/` — pure logic. `lib/matching.ts`'s rules, including the sharp
+  edges (the two-character word cutoff, empty and whitespace-only colours).
+- `tests/integration/` — `lib/notify.ts` against a real local Postgres with
+  real RLS. Three of these assert policy behaviour that cannot be expressed
+  any other way: one farmer cannot read another's notifications, an
+  authenticated client cannot fabricate an alert, and `animals` is owner-only.
+
+`tests/helpers/guard.ts` refuses to run against anything but a loopback
+Supabase URL, and `tests/helpers/global-setup.ts` overwrites the connection
+details from `supabase status` before any test file loads. Both exist because
+Next still loads `.env` when `NODE_ENV=test`, and `.env` holds production
+credentials.
+
+`lib/notify.ts` is deliberately free of `next/*` imports so it can be imported
+directly by the test runner; `app/actions/report.ts` cannot be, because it
+calls `cookies()` and `revalidatePath()`.
 
 ## Deploying to Vercel
 
