@@ -1,3 +1,19 @@
+-- ═══════════════════════════════════════════════════════════════════════════
+-- NOTE: this file describes the HOSTED project's history and is hand-run.
+--
+-- The local CLI stack is built from supabase/migrations/ instead, which holds
+-- one consolidated file reflecting the final desired state. Do not run this
+-- file against a local stack — you would recreate the create-then-drop
+-- sequence the migration deliberately collapses.
+--
+-- Two known divergences from the hosted database, both verified 2026-09-02:
+--   * `comments.user_name` is declared here but does not exist live, and the
+--     app never writes it.
+--   * The seven `notifications` detail columns are declared here but were
+--     never applied live, which is why every farmer alert insert has been
+--     failing in production. See supabase/fix-notifications-columns.sql.
+-- ═══════════════════════════════════════════════════════════════════════════
+
 -- ── Profiles (extends Supabase auth.users) ──────────────────────────────────
 create table if not exists profiles (
   id          uuid references auth.users(id) on delete cascade primary key,

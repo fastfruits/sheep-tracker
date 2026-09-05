@@ -12,6 +12,16 @@
 
 # testing
 /coverage
+/test-results/
+/playwright-report/
+/playwright/.cache/
+/blob-report/
+tests/e2e/.auth/
+
+# supabase local stack
+/supabase/.branches
+/supabase/.temp
+/supabase/.env
 
 # next.js
 /.next/
@@ -33,6 +43,9 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 !.env.example
+# Committed deliberately: without it, a fresh clone runs the test suite against
+# whatever `.env` happens to hold — which is the hosted project.
+!.env.test
 
 # vercel
 .vercel
