@@ -9,11 +9,11 @@ const LAST_UPDATED = '1 September 2026';
 
 export default function PrivacyPage() {
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
-      <h1 className="text-3xl font-extrabold tracking-tight">Privacy</h1>
+    <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 sm:py-8">
+      <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">Privacy</h1>
       <p className="mt-2 text-sm text-muted-foreground">Last updated {LAST_UPDATED}</p>
 
-      <h2 className="mt-8 text-lg font-semibold">What we collect</h2>
+      <h2 className="mt-6 text-base font-semibold sm:mt-8 sm:text-lg">What we collect</h2>
       <p className="mt-2 text-muted-foreground">
         When you report a sighting we store what you type species, color,
         markings, caption along with any photo you attach and the coordinates
@@ -26,7 +26,7 @@ export default function PrivacyPage() {
         you register.
       </p>
 
-      <h2 className="mt-8 text-lg font-semibold">Who can see it</h2>
+      <h2 className="mt-6 text-base font-semibold sm:mt-8 sm:text-lg">Who can see it</h2>
       <p className="mt-2 text-muted-foreground">
         Sightings are public. Your display name, caption, photo, location label
         and the map position appear in the community feed and on your profile,
@@ -39,14 +39,14 @@ export default function PrivacyPage() {
         location. Your email address is never shown to other users.
       </p>
 
-      <h2 className="mt-8 text-lg font-semibold">Where it is stored</h2>
+      <h2 className="mt-6 text-base font-semibold sm:mt-8 sm:text-lg">Where it is stored</h2>
       <p className="mt-2 text-muted-foreground">
         Accounts, sightings and photos are stored with Supabase, which hosts the
         database and file storage behind this site. Sign-in is handled by
         Supabase Auth.
       </p>
 
-      <h2 className="mt-8 text-lg font-semibold">Your choices</h2>
+      <h2 className="mt-6 text-base font-semibold sm:mt-8 sm:text-lg">Your choices</h2>
       <p className="mt-2 text-muted-foreground">
         You can report a sighting without an account. You can leave the location
         off a report, though that makes it much less useful to the owner. To

@@ -9,11 +9,11 @@ const LAST_UPDATED = '1 September 2026';
 
 export default function TermsPage() {
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
-      <h1 className="text-3xl font-extrabold tracking-tight">Terms</h1>
+    <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 sm:py-8">
+      <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">Terms</h1>
       <p className="mt-2 text-sm text-muted-foreground">Last updated {LAST_UPDATED}</p>
 
-      <h2 className="mt-8 text-lg font-semibold">Not an emergency service</h2>
+      <h2 className="mt-6 text-base font-semibold sm:mt-8 sm:text-lg">Not an emergency service</h2>
       <p className="mt-2 text-muted-foreground">
         SheepFinder is a community reporting tool. It is not an emergency
         service, a veterinary service, or a substitute for either. If an animal
@@ -21,7 +21,7 @@ export default function TermsPage() {
         police or the relevant local authority first.
       </p>
 
-      <h2 className="mt-8 text-lg font-semibold">Reports are unverified</h2>
+      <h2 className="mt-6 text-base font-semibold sm:mt-8 sm:text-lg">Reports are unverified</h2>
       <p className="mt-2 text-muted-foreground">
         Sightings, photos, comments and confirmations are submitted by other
         users. We do not check them. A match between a sighting and a registered
@@ -29,7 +29,7 @@ export default function TermsPage() {
         will be seen, or that anyone will respond.
       </p>
 
-      <h2 className="mt-8 text-lg font-semibold">Using the site</h2>
+      <h2 className="mt-6 text-base font-semibold sm:mt-8 sm:text-lg">Using the site</h2>
       <p className="mt-2 text-muted-foreground">
         Report honestly and only what you have actually seen. Post photos you
         took yourself. Do not use the site to harass anyone, to enter someone
@@ -37,14 +37,14 @@ export default function TermsPage() {
         posts or accounts that break these rules.
       </p>
 
-      <h2 className="mt-8 text-lg font-semibold">Your content</h2>
+      <h2 className="mt-6 text-base font-semibold sm:mt-8 sm:text-lg">Your content</h2>
       <p className="mt-2 text-muted-foreground">
         What you post stays yours. By posting it you allow us to display it on
         the site, including in the public feed and in link previews, so that
         the animal&apos;s owner and fellow users can see it.
       </p>
 
-      <h2 className="mt-8 text-lg font-semibold">Availability</h2>
+      <h2 className="mt-6 text-base font-semibold sm:mt-8 sm:text-lg">Availability</h2>
       <p className="mt-2 text-muted-foreground">
         SheepFinder is provided as-is, with no guarantee that it will be
         available or working at any given moment.

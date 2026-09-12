@@ -9,15 +9,15 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
-      <h1 className="text-3xl font-extrabold tracking-tight">About SheepFinder</h1>
+    <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 sm:py-8">
+      <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">About SheepFinder</h1>
       <p className="mt-2 text-muted-foreground">
         A sheep on the road is somebody&apos;s sheep. SheepFinder exists to close the
         gap between the person who spots it and the farmer who has been looking
         for it.
       </p>
 
-      <h2 className="mt-8 text-lg font-semibold">How it works</h2>
+      <h2 className="mt-6 text-base font-semibold sm:mt-8 sm:text-lg">How it works</h2>
       <p className="mt-2 text-muted-foreground">
         Report a sighting in a few seconds: what you saw, its color and
         markings, an optional photo, and where you saw it. The report is posted
@@ -30,7 +30,7 @@ export default function AboutPage() {
         guessing which farm to try first.
       </p>
 
-      <h2 className="mt-8 text-lg font-semibold">Two kinds of account</h2>
+      <h2 className="mt-6 text-base font-semibold sm:mt-8 sm:text-lg">Two kinds of account</h2>
       <p className="mt-2 text-muted-foreground">
         Anyone can report a sighting. Farmer accounts can additionally register
         animals — sheep, cows, goats, pigs, horses, dogs, cats, chickens — and

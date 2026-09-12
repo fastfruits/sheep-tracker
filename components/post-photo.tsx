@@ -16,17 +16,21 @@ export function PostPhoto({
   alt,
   emoji,
   priority,
+  sizes = '(max-width: 768px) 100vw, 512px',
 }: {
   src?: string;
   alt: string;
   emoji: string;
   priority?: boolean;
+  /** Override for grid layouts (e.g. the 2-up profile tiles) so phones don't
+   *  download a full-width image per thumbnail. */
+  sizes?: string;
 }) {
   const [failed, setFailed] = useState(false);
 
   if (!src || failed) {
     return (
-      <div className="grid aspect-[4/3] w-full place-items-center bg-muted text-6xl">
+      <div className="grid aspect-[4/3] w-full place-items-center bg-muted text-5xl sm:text-6xl">
         <span aria-hidden>{emoji}</span>
       </div>
     );
@@ -38,7 +42,7 @@ export function PostPhoto({
         src={src}
         alt={alt}
         fill
-        sizes="(max-width: 768px) 100vw, 512px"
+        sizes={sizes}
         className="object-cover"
         priority={priority}
         onError={() => setFailed(true)}
