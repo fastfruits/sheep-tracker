@@ -33,8 +33,8 @@ export function AlertList({ notifications }: { notifications: FarmerNotification
         >
           <div className="flex items-center gap-2">
             <span aria-hidden>{speciesInfo(n.species)?.emoji ?? '🐾'}</span>
-            <p className="font-bold">Possible match: {n.animalName}</p>
-            <time className="ml-auto text-xs text-muted-foreground" dateTime={new Date(n.timestamp).toISOString()}>
+            <p className="min-w-0 truncate font-bold">Possible match: {n.animalName}</p>
+            <time className="ml-auto shrink-0 text-xs text-muted-foreground" dateTime={new Date(n.timestamp).toISOString()}>
               {timeAgo(n.timestamp)}
             </time>
           </div>
@@ -44,7 +44,7 @@ export function AlertList({ notifications }: { notifications: FarmerNotification
           {n.locationLabel && <p className="mt-1 text-sm text-muted-foreground">📍 {n.locationLabel}</p>}
           {n.latitude != null && n.longitude != null && (
             <a
-              className="mt-1 inline-block font-mono text-xs text-brand hover:underline"
+              className="mt-1 inline-block break-all font-mono text-xs text-brand hover:underline"
               href={`https://www.google.com/maps/search/?api=1&query=${n.latitude},${n.longitude}`}
               target="_blank"
               rel="noopener noreferrer"

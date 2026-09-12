@@ -30,10 +30,10 @@ export default async function AccountPage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
-      <header className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight">{user.name}</h1>
+    <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 sm:py-8">
+      <header className="flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{user.name}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{user.email}</p>
           {user.isFarmer && (
             <p className="mt-2 inline-block rounded-full bg-secondary px-3 py-1 text-sm font-semibold text-brand">
@@ -46,17 +46,17 @@ export default async function AccountPage() {
         </form>
       </header>
 
-      <dl className="mt-6 grid grid-cols-3 gap-3 rounded-2xl border border-border bg-card p-4 text-center">
+      <dl className="mt-6 grid grid-cols-3 gap-2 rounded-2xl border border-border bg-card p-3 text-center sm:gap-3 sm:p-4">
         <div>
-          <dd className="text-xl font-extrabold">{posts.length}</dd>
+          <dd className="text-lg font-extrabold sm:text-xl">{posts.length}</dd>
           <dt className="text-xs text-muted-foreground">Posts</dt>
         </div>
         <div className="border-x border-border">
-          <dd className="text-xl font-extrabold">{counts.followers}</dd>
+          <dd className="text-lg font-extrabold sm:text-xl">{counts.followers}</dd>
           <dt className="text-xs text-muted-foreground">Followers</dt>
         </div>
         <div>
-          <dd className="text-xl font-extrabold">{counts.following}</dd>
+          <dd className="text-lg font-extrabold sm:text-xl">{counts.following}</dd>
           <dt className="text-xs text-muted-foreground">Following</dt>
         </div>
       </dl>
@@ -69,16 +69,16 @@ export default async function AccountPage() {
 
       {user.isFarmer && (
         <>
-          <section className="mt-10">
-            <h2 className="text-xl font-extrabold">Sighting alerts</h2>
+          <section className="mt-8 sm:mt-10">
+            <h2 className="text-lg font-extrabold sm:text-xl">Sighting alerts</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               Raised automatically when a report matches one of your animals.
             </p>
             <AlertList notifications={notifications} />
           </section>
 
-          <section className="mt-10">
-            <h2 className="text-xl font-extrabold">Your animals</h2>
+          <section className="mt-8 sm:mt-10">
+            <h2 className="text-lg font-extrabold sm:text-xl">Your animals</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               Only you can see this list. It is matched against every new sighting.
             </p>
@@ -88,7 +88,7 @@ export default async function AccountPage() {
       )}
 
       {!user.isFarmer && (
-        <section className="mt-10 rounded-2xl border border-amber-note-border bg-amber-note-bg p-5">
+        <section className="mt-8 rounded-2xl border border-amber-note-border bg-amber-note-bg p-4 sm:mt-10 sm:p-5">
           <h2 className="font-extrabold">Are you a farmer?</h2>
           <p className="mt-1 text-sm">
             Farmer accounts can register animals and get alerted when someone reports

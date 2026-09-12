@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 
@@ -18,6 +18,17 @@ export const metadata: Metadata = {
   description: DESCRIPTION,
   openGraph: { siteName: SITE, type: 'website', description: DESCRIPTION },
   twitter: { card: 'summary_large_image' },
+};
+
+/**
+ * Explicit so mobile browser chrome picks up the cream page color. No
+ * `viewport-fit: cover`: there is no fixed bottom UI, so it would only add
+ * safe-area obligations for no gain.
+ */
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#F7F6F2',
 };
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {

@@ -93,7 +93,7 @@ export function AuthForm() {
             onClick={() => setMode(m)}
             aria-pressed={mode === m}
             className={cn(
-              'rounded-full py-2 text-sm font-bold transition-colors',
+              'min-h-11 rounded-full py-2 text-sm font-bold transition-colors md:min-h-0',
               mode === m ? 'bg-brand text-white' : 'text-muted-foreground hover:text-foreground'
             )}
           >
@@ -135,12 +135,12 @@ export function AuthForm() {
               autoComplete="new-password" required minLength={6} className="mt-2" />
           </div>
 
-          <label className="flex items-start gap-3 rounded-xl border border-border bg-card p-4">
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-card p-4">
             <input
               type="checkbox"
               checked={isFarmer}
               onChange={e => setIsFarmer(e.target.checked)}
-              className="mt-1 size-4 accent-[var(--brand)]"
+              className="mt-0.5 size-5 shrink-0 accent-[var(--brand)] md:mt-1 md:size-4"
             />
             <span className="text-sm">
               <span className="block font-bold">I&apos;m a farmer</span>
@@ -202,7 +202,7 @@ function AnimalStep({
         ← Back
       </button>
       <div>
-        <h2 className="text-xl font-extrabold">Register your animals</h2>
+        <h2 className="text-lg font-extrabold sm:text-xl">Register your animals</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           We&apos;ll alert you the moment someone reports a sighting matching one of
           these — with their location.
@@ -212,14 +212,14 @@ function AnimalStep({
       {animals.length > 0 && (
         <ul className="space-y-2">
           {animals.map((a, i) => (
-            <li key={i} className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 text-sm">
+            <li key={i} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-border bg-card p-3 text-sm">
               <span aria-hidden>{SPECIES_LIST.find(s => s.value === a.species)?.emoji}</span>
-              <span className="font-bold">{a.name}</span>
-              <span className="text-muted-foreground">{a.primaryColor}</span>
+              <span className="min-w-0 truncate font-bold">{a.name}</span>
+              <span className="min-w-0 truncate text-muted-foreground">{a.primaryColor}</span>
               <button
                 type="button"
                 onClick={() => setAnimals(animals.filter((_, j) => j !== i))}
-                className="ml-auto text-destructive hover:underline"
+                className="ml-auto shrink-0 text-destructive hover:underline"
               >
                 Remove
               </button>
@@ -238,7 +238,7 @@ function AnimalStep({
               onClick={() => setSpecies(s.value)}
               aria-pressed={species === s.value}
               className={cn(
-                'rounded-full border-2 px-3 py-1.5 text-sm font-semibold transition-colors',
+                'inline-flex min-h-11 items-center rounded-full border-2 px-3 py-1.5 text-sm font-semibold transition-colors md:min-h-0',
                 species === s.value ? 'border-brand bg-brand text-white' : 'border-border hover:border-brand/40'
               )}
             >

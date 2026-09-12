@@ -53,7 +53,7 @@ export default async function PostPage({ params }: PageProps<'/post/[id]'>) {
   const isResolved = post.isSighting && post.sightingStatus === 'resolved';
 
   return (
-    <article className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
+    <article className="mx-auto max-w-2xl px-4 py-6 sm:px-6 sm:py-8">
       <Link href="/feed" className="text-sm font-bold text-brand hover:underline">
         ← Back to community
       </Link>
@@ -92,37 +92,37 @@ export default async function PostPage({ params }: PageProps<'/post/[id]'>) {
         />
       </div>
 
-      <p className="mt-5 text-lg leading-relaxed">{post.caption}</p>
+      <p className="mt-5 text-base leading-relaxed sm:text-lg">{post.caption}</p>
 
-      <dl className="mt-5 grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 rounded-xl bg-card p-4 text-sm ring-1 ring-border">
+      <dl className="mt-5 grid grid-cols-1 gap-y-0.5 rounded-xl bg-card p-4 text-sm ring-1 ring-border sm:grid-cols-[auto_1fr] sm:gap-x-6 sm:gap-y-2">
         {info && (
           <>
-            <dt className="font-semibold text-muted-foreground">Animal</dt>
-            <dd>{info.emoji} {info.label}</dd>
+            <dt className="mt-2 font-semibold text-muted-foreground first:mt-0 sm:mt-0">Animal</dt>
+            <dd className="break-words">{info.emoji} {info.label}</dd>
           </>
         )}
         {post.primaryColor && (
           <>
-            <dt className="font-semibold text-muted-foreground">color</dt>
-            <dd>{post.primaryColor}</dd>
+            <dt className="mt-2 font-semibold text-muted-foreground first:mt-0 sm:mt-0">color</dt>
+            <dd className="break-words">{post.primaryColor}</dd>
           </>
         )}
         {post.markings && (
           <>
-            <dt className="font-semibold text-muted-foreground">Markings</dt>
-            <dd>{post.markings}</dd>
+            <dt className="mt-2 font-semibold text-muted-foreground first:mt-0 sm:mt-0">Markings</dt>
+            <dd className="break-words">{post.markings}</dd>
           </>
         )}
         {post.locationLabel && (
           <>
-            <dt className="font-semibold text-muted-foreground">Location</dt>
-            <dd>📍 {post.locationLabel}</dd>
+            <dt className="mt-2 font-semibold text-muted-foreground first:mt-0 sm:mt-0">Location</dt>
+            <dd className="break-words">📍 {post.locationLabel}</dd>
           </>
         )}
         {post.latitude != null && post.longitude != null && (
           <>
-            <dt className="font-semibold text-muted-foreground">Coordinates</dt>
-            <dd>
+            <dt className="mt-2 font-semibold text-muted-foreground first:mt-0 sm:mt-0">Coordinates</dt>
+            <dd className="break-words">
               <a
                 className="font-mono text-brand hover:underline"
                 href={`https://www.google.com/maps/search/?api=1&query=${post.latitude},${post.longitude}`}
@@ -154,7 +154,7 @@ export default async function PostPage({ params }: PageProps<'/post/[id]'>) {
 
       {post.comments.length > 0 && (
         <section className="mt-8">
-          <h2 className="text-lg font-bold">Comments</h2>
+          <h2 className="text-base font-bold sm:text-lg">Comments</h2>
           <ul className="mt-3 space-y-3">
             {post.comments.map(c => (
               <li key={c.id} className="rounded-xl bg-card p-3 text-sm ring-1 ring-border">

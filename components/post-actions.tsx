@@ -54,7 +54,7 @@ export function PostActions({
       <div className="flex flex-wrap items-center gap-3 border-t border-border pt-3 text-sm">
         <button
           type="button"
-          className={cn('font-semibold transition-colors', optimisticLike.liked ? 'text-destructive' : 'text-muted-foreground hover:text-foreground')}
+          className={cn('inline-flex min-h-11 items-center font-semibold transition-colors md:min-h-0', optimisticLike.liked ? 'text-destructive' : 'text-muted-foreground hover:text-foreground')}
           onClick={() => {
             if (!guard()) return;
             startTransition(async () => {
@@ -76,7 +76,7 @@ export function PostActions({
           <button
             type="button"
             className={cn(
-              'rounded-full px-3 py-1 text-xs font-bold transition-colors',
+              'inline-flex min-h-11 items-center rounded-full px-3 py-1 text-xs font-bold transition-colors md:min-h-0',
               optimisticConfirm.confirmed
                 ? 'bg-confirm text-white'
                 : 'bg-confirm-bg text-confirm hover:brightness-95'

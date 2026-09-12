@@ -14,7 +14,7 @@ export function NavLinks({ unread, signedIn }: { unread: number; signedIn: boole
   const pathname = usePathname();
 
   return (
-    <nav className="flex items-center gap-1" aria-label="Main">
+    <nav className="flex items-center gap-0.5 sm:gap-1" aria-label="Main">
       {LINKS.map(link => {
         const active = link.href === '/' ? pathname === '/' : pathname.startsWith(link.href);
         return (
@@ -23,7 +23,7 @@ export function NavLinks({ unread, signedIn }: { unread: number; signedIn: boole
             href={link.href}
             aria-current={active ? 'page' : undefined}
             className={cn(
-              'relative rounded-full px-3 py-2 text-sm font-semibold transition-colors sm:px-4',
+              'relative inline-flex min-h-11 items-center rounded-full px-2.5 py-2 text-[13px] font-semibold transition-colors sm:px-4 sm:text-sm md:min-h-0',
               active
                 ? 'bg-secondary text-brand'
                 : 'text-muted-foreground hover:bg-secondary/60 hover:text-brand'

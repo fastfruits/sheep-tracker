@@ -50,42 +50,42 @@ export function PostCard({ post, currentUserId }: { post: Post; currentUserId?: 
 
       <div className="space-y-3 p-4">
         <div className="flex items-center gap-3">
-          <Link href={`/u/${post.userId}`} className="flex items-center gap-3 hover:underline">
+          <Link href={`/u/${post.userId}`} className="flex min-w-0 items-center gap-3 hover:underline">
             <span
-              className="grid size-9 place-items-center rounded-full text-sm font-bold text-white"
+              className="grid size-9 shrink-0 place-items-center rounded-full text-sm font-bold text-white"
               style={{ backgroundColor: initialColor(post.userName) }}
               aria-hidden
             >
               {post.userName.charAt(0).toUpperCase()}
             </span>
-            <span>
-              <span className="block text-sm font-bold leading-tight">{post.userName}</span>
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-bold leading-tight">{post.userName}</span>
               <time className="block text-xs text-muted-foreground" dateTime={new Date(post.timestamp).toISOString()}>
                 {timeAgo(post.timestamp)}
               </time>
             </span>
           </Link>
           {info && (
-            <span className="ml-auto rounded-full bg-secondary px-2.5 py-1 text-xs font-semibold text-brand">
+            <span className="ml-auto shrink-0 rounded-full bg-secondary px-2.5 py-1 text-xs font-semibold text-brand">
               {info.emoji} {info.label}
             </span>
           )}
         </div>
 
-        <p className="text-[15px] leading-relaxed">{post.caption}</p>
+        <p className="text-sm leading-relaxed sm:text-[15px]">{post.caption}</p>
 
         {(post.primaryColor || post.markings) && (
-          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 rounded-xl bg-muted p-3 text-sm">
+          <dl className="grid grid-cols-1 gap-y-0.5 rounded-xl bg-muted p-3 text-sm sm:grid-cols-[auto_1fr] sm:gap-x-4 sm:gap-y-1">
             {post.primaryColor && (
               <>
-                <dt className="font-semibold text-muted-foreground">Color</dt>
-                <dd>{post.primaryColor}</dd>
+                <dt className="mt-2 font-semibold text-muted-foreground first:mt-0 sm:mt-0">Color</dt>
+                <dd className="break-words">{post.primaryColor}</dd>
               </>
             )}
             {post.markings && (
               <>
-                <dt className="font-semibold text-muted-foreground">Markings</dt>
-                <dd>{post.markings}</dd>
+                <dt className="mt-2 font-semibold text-muted-foreground first:mt-0 sm:mt-0">Markings</dt>
+                <dd className="break-words">{post.markings}</dd>
               </>
             )}
           </dl>

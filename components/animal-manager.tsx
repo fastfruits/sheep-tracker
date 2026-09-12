@@ -45,14 +45,14 @@ export function AnimalManager({ animals }: { animals: RegisteredAnimal[] }) {
           <li key={a.id} className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4">
             <span className="text-xl" aria-hidden>{speciesInfo(a.species)?.emoji ?? '🐾'}</span>
             <div className="min-w-0">
-              <p className="font-bold">{a.name}</p>
+              <p className="truncate font-bold">{a.name}</p>
               <p className="truncate text-sm text-muted-foreground">
                 {a.primaryColor}{a.markings ? ` · ${a.markings}` : ''}{a.tagNumber ? ` · #${a.tagNumber}` : ''}
               </p>
             </div>
             <button
               type="button"
-              className="ml-auto text-sm text-destructive hover:underline"
+              className="ml-auto shrink-0 text-sm text-destructive hover:underline"
               onClick={() => {
                 startTransition(async () => {
                   const r = await deleteAnimal(a.id);
@@ -76,7 +76,7 @@ export function AnimalManager({ animals }: { animals: RegisteredAnimal[] }) {
                 onClick={() => setSpecies(s.value)}
                 aria-pressed={species === s.value}
                 className={cn(
-                  'rounded-full border-2 px-3 py-1.5 text-sm font-semibold transition-colors',
+                  'inline-flex min-h-11 items-center rounded-full border-2 px-3 py-1.5 text-sm font-semibold transition-colors md:min-h-0',
                   species === s.value ? 'border-brand bg-brand text-white' : 'border-border hover:border-brand/40'
                 )}
               >

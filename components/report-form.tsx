@@ -82,15 +82,15 @@ export function ReportForm({ signedIn }: { signedIn: boolean }) {
 
   if (result?.ok) {
     return (
-      <div className="py-10 text-center">
-        <p className="text-5xl" aria-hidden>✅</p>
-        <h2 className="mt-4 text-2xl font-extrabold">Report submitted</h2>
+      <div className="py-8 text-center sm:py-10">
+        <p className="text-4xl sm:text-5xl" aria-hidden>✅</p>
+        <h2 className="mt-4 text-xl font-extrabold sm:text-2xl">Report submitted</h2>
         <p className="mt-2 text-muted-foreground">
           Your sighting is now in the community feed.
         </p>
 
         {result.matched && result.matched.length > 0 && (
-          <div className="mx-auto mt-6 max-w-md rounded-2xl border-2 border-amber-note-border bg-amber-note-bg p-5 text-left">
+          <div className="mx-auto mt-6 max-w-md rounded-2xl border-2 border-amber-note-border bg-amber-note-bg p-4 text-left sm:p-5">
             {/* Only claim delivery when the alert rows were actually written.
                 `matched` says what the animal probably is; `alertDelivered`
                 says whether anyone was told. */}
@@ -122,13 +122,13 @@ export function ReportForm({ signedIn }: { signedIn: boolean }) {
           </div>
         )}
 
-        <div className="mt-8 flex justify-center gap-3">
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
           {result.postId && (
-            <Button asChild>
+            <Button asChild className="w-full sm:w-auto">
               <Link href={`/post/${result.postId}`}>View the sighting</Link>
             </Button>
           )}
-          <Button variant="outline" onClick={() => { setResult(null); setPhoto(null); setPreview(null); setSpecies(''); setCoords(null); setLocationLabel(''); }}>
+          <Button variant="outline" className="w-full sm:w-auto" onClick={() => { setResult(null); setPhoto(null); setPreview(null); setSpecies(''); setCoords(null); setLocationLabel(''); }}>
             Report another
           </Button>
         </div>
@@ -160,7 +160,7 @@ export function ReportForm({ signedIn }: { signedIn: boolean }) {
             <img src={preview} alt="Selected photo" className="size-full object-cover" />
           ) : (
             <span className="text-center text-sm text-muted-foreground">
-              <span className="block text-4xl" aria-hidden>📷</span>
+              <span className="block text-3xl sm:text-4xl" aria-hidden>📷</span>
               <span className="mt-2 block font-bold text-foreground">Add a photo</span>
               Camera or photo library
             </span>
@@ -189,7 +189,7 @@ export function ReportForm({ signedIn }: { signedIn: boolean }) {
               onClick={() => setSpecies(s.value)}
               aria-pressed={species === s.value}
               className={cn(
-                'rounded-full border-2 px-4 py-2 text-sm font-semibold transition-colors',
+                'inline-flex min-h-11 items-center rounded-full border-2 px-4 py-2 text-sm font-semibold transition-colors md:min-h-0',
                 species === s.value
                   ? 'border-brand bg-brand text-white'
                   : 'border-border bg-card hover:border-brand/40'
