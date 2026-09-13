@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Species } from '@/lib/types';
+import { formatMarkings, type Marking } from '@/lib/markings';
 import { adminClient } from './db';
 
 /**
@@ -31,6 +32,7 @@ export interface TestAnimal {
   species: Species;
   name: string;
   primaryColor: string;
+  markings?: Marking[];
 }
 
 /** Tracks everything created so a test file can clean up after itself. */
@@ -76,8 +78,9 @@ export class Fixtures {
 
   async createAnimal(
     owner: TestUser,
-    animal: { species: Species; name: string; primaryColor: string; markings?: string }
+    animal: { species: Species; name: string; primaryColor: string; markings?: Marking[] }
   ): Promise<TestAnimal> {
+    const markings = animal.markings ?? [];
     const { data, error } = await this.db
       .from('animals')
       .insert({
@@ -85,7 +88,10 @@ export class Fixtures {
         species: animal.species,
         name: animal.name,
         primary_color: animal.primaryColor,
-        markings: animal.markings ?? null,
+        // Mirrors registerAnimal(): the summary text and the structured JSON
+        // are written together, and only the JSON is matched on.
+        markings: formatMarkings(markings) || null,
+        markings_details: markings,
       })
       .select('id')
       .single();
@@ -100,6 +106,7 @@ export class Fixtures {
     post: {
       species: Species;
       primaryColor: string;
+      markings?: Marking[];
       caption?: string;
       locationLabel?: string | null;
       latitude?: number | null;
@@ -113,6 +120,8 @@ export class Fixtures {
         caption: post.caption ?? `Spotted a ${post.species}`,
         species: post.species,
         primary_color: post.primaryColor,
+        markings: formatMarkings(post.markings ?? []) || null,
+        markings_details: post.markings ?? [],
         location_label: post.locationLabel ?? null,
         latitude: post.latitude ?? null,
         longitude: post.longitude ?? null,

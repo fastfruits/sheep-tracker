@@ -5,10 +5,11 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 import { SPECIES_LIST } from '@/lib/species';
+import { describeMarking, type Marking } from '@/lib/markings';
 import { login, signup, type SignupAnimal } from '@/app/actions/auth';
+import { MarkingPicker } from '@/components/marking-picker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 
@@ -179,7 +180,8 @@ function AnimalStep({
   const [species, setSpecies] = useState('');
   const [name, setName] = useState('');
   const [color, setColor] = useState('');
-  const [markings, setMarkings] = useState('');
+  const [markings, setMarkings] = useState<Marking[]>([]);
+  const [markingNotes, setMarkingNotes] = useState('');
   const [tagNumber, setTagNumber] = useState('');
 
   function add() {
@@ -190,10 +192,11 @@ function AnimalStep({
       species: species as SignupAnimal['species'],
       name: name.trim(),
       primaryColor: color.trim(),
-      markings: markings.trim(),
+      markings,
+      markingNotes: markingNotes.trim() || undefined,
       tagNumber: tagNumber.trim() || undefined,
     }]);
-    setSpecies(''); setName(''); setColor(''); setMarkings(''); setTagNumber('');
+    setSpecies(''); setName(''); setColor(''); setMarkings([]); setMarkingNotes(''); setTagNumber('');
   }
 
   return (
@@ -215,7 +218,9 @@ function AnimalStep({
             <li key={i} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-border bg-card p-3 text-sm">
               <span aria-hidden>{SPECIES_LIST.find(s => s.value === a.species)?.emoji}</span>
               <span className="min-w-0 truncate font-bold">{a.name}</span>
-              <span className="min-w-0 truncate text-muted-foreground">{a.primaryColor}</span>
+              <span className="min-w-0 truncate text-muted-foreground">
+                {[a.primaryColor, ...a.markings.map(describeMarking)].join(' · ')}
+              </span>
               <button
                 type="button"
                 onClick={() => setAnimals(animals.filter((_, j) => j !== i))}
@@ -248,7 +253,12 @@ function AnimalStep({
         </div>
         <Input placeholder="Name (e.g. Dotty)" value={name} onChange={e => setName(e.target.value)} />
         <Input placeholder="Primary color (e.g. white, brown)" value={color} onChange={e => setColor(e.target.value)} />
-        <Textarea placeholder="Markings (e.g. blue ear tag #42)" value={markings} onChange={e => setMarkings(e.target.value)} />
+        <MarkingPicker
+          markings={markings}
+          onChange={setMarkings}
+          description="Pick from these lists and a reporter picks from the same ones, so a sighting can be matched to this animal automatically."
+        />
+        <Input placeholder="Anything else about its markings (optional)" value={markingNotes} onChange={e => setMarkingNotes(e.target.value)} />
         <Input placeholder="Tag/ear number (optional)" value={tagNumber} onChange={e => setTagNumber(e.target.value)} />
         <Button type="button" variant="outline" className="w-full" onClick={add}>+ Add to list</Button>
       </div>

@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { notifyMatchingFarmers, type MatchedAnimal } from '@/lib/notify';
 import { speciesLabel } from '@/lib/species';
+import { formatMarkings, parseMarkings } from '@/lib/markings';
 import type { Species } from '@/lib/types';
 
 export interface ReportResult {
@@ -47,7 +48,13 @@ export async function reportSighting(formData: FormData): Promise<ReportResult> 
 
   const species = String(formData.get('species') ?? '') as Species;
   const primaryColor = String(formData.get('primaryColor') ?? '').trim();
-  const markings = String(formData.get('markings') ?? '').trim();
+  // Structured picks, re-validated here: the browser posts JSON, so this is
+  // untrusted input and anything outside the vocabulary is dropped.
+  const markingDetails = parseMarkings(formData.get('markingDetails'));
+  const markingNotes = String(formData.get('markingNotes') ?? '').trim();
+  // The text column stays the display string and keeps every existing reader
+  // working; `markings_details` is what matching reads.
+  const markings = formatMarkings(markingDetails, markingNotes);
   const caption = String(formData.get('caption') ?? '').trim();
   const locationLabel = String(formData.get('locationLabel') ?? '').trim();
   const latitude = formData.get('latitude') ? Number(formData.get('latitude')) : null;
@@ -75,6 +82,8 @@ export async function reportSighting(formData: FormData): Promise<ReportResult> 
       species,
       primary_color: primaryColor,
       markings: markings || null,
+      markings_details: markingDetails,
+      marking_notes: markingNotes || null,
       location_label: locationLabel || null,
       latitude,
       longitude,
@@ -98,6 +107,7 @@ export async function reportSighting(formData: FormData): Promise<ReportResult> 
     reporterId: user.id,
     species,
     primaryColor,
+    markings: markingDetails,
     reporterName,
     caption: finalCaption,
     locationLabel: locationLabel || null,

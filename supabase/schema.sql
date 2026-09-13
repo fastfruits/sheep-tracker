@@ -12,6 +12,10 @@
 --   * The seven `notifications` detail columns are declared here but were
 --     never applied live, which is why every farmer alert insert has been
 --     failing in production. See supabase/fix-notifications-columns.sql.
+--   * The structured-markings columns (animals/posts.markings_details and
+--     .marking_notes, notifications.reported_markings) are declared here for a
+--     fresh build, but an existing hosted database needs
+--     supabase/add-structured-markings.sql run against it.
 -- ═══════════════════════════════════════════════════════════════════════════
 
 -- ── Profiles (extends Supabase auth.users) ──────────────────────────────────
@@ -34,7 +38,11 @@ create table if not exists animals (
   species       text not null,
   name          text not null,
   primary_color text not null,
-  markings      text,
+  -- `markings` is the human-readable summary; `markings_details` is the
+  -- structured form matching runs on. See lib/markings.ts.
+  markings          text,
+  markings_details  jsonb not null default '[]'::jsonb,
+  marking_notes     text,
   tag_number    text,
   created_at    timestamptz default now()
 );
@@ -46,7 +54,9 @@ create table if not exists posts (
   caption          text,
   species          text,
   primary_color    text,
-  markings         text,
+  markings          text,
+  markings_details  jsonb not null default '[]'::jsonb,
+  marking_notes     text,
   location_label   text,
   latitude         double precision,
   longitude        double precision,
@@ -97,6 +107,7 @@ create table if not exists notifications (
   species          text,
   reporter_name    text,
   reporter_caption text,
+  reported_markings text,
   location_label   text,
   latitude         double precision,
   longitude        double precision,

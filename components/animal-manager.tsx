@@ -4,11 +4,12 @@ import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
 
 import { SPECIES_LIST, speciesInfo } from '@/lib/species';
+import { describeMarking, markingColorInfo, type Marking } from '@/lib/markings';
+import { MarkingPicker } from '@/components/marking-picker';
 import { registerAnimal, deleteAnimal } from '@/app/actions/posts';
 import type { RegisteredAnimal, Species } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 
 export function AnimalManager({ animals }: { animals: RegisteredAnimal[] }) {
@@ -17,17 +18,18 @@ export function AnimalManager({ animals }: { animals: RegisteredAnimal[] }) {
   const [species, setSpecies] = useState('');
   const [name, setName] = useState('');
   const [color, setColor] = useState('');
-  const [markings, setMarkings] = useState('');
+  const [markings, setMarkings] = useState<Marking[]>([]);
+  const [markingNotes, setMarkingNotes] = useState('');
   const [tagNumber, setTagNumber] = useState('');
 
   function submit() {
     startTransition(async () => {
       const r = await registerAnimal({
-        species: species as Species, name, primaryColor: color, markings, tagNumber,
+        species: species as Species, name, primaryColor: color, markings, markingNotes, tagNumber,
       });
       if (!r.ok) { toast.error(r.error ?? 'Could not add the animal'); return; }
       toast.success(`${name.trim()} registered`);
-      setSpecies(''); setName(''); setColor(''); setMarkings(''); setTagNumber('');
+      setSpecies(''); setName(''); setColor(''); setMarkings([]); setMarkingNotes(''); setTagNumber('');
       setOpen(false);
     });
   }
@@ -47,8 +49,28 @@ export function AnimalManager({ animals }: { animals: RegisteredAnimal[] }) {
             <div className="min-w-0">
               <p className="truncate font-bold">{a.name}</p>
               <p className="truncate text-sm text-muted-foreground">
-                {a.primaryColor}{a.markings ? ` · ${a.markings}` : ''}{a.tagNumber ? ` · #${a.tagNumber}` : ''}
+                {a.primaryColor}{a.tagNumber ? ` · #${a.tagNumber}` : ''}
               </p>
+              {a.markingDetails.length > 0 ? (
+                <ul className="mt-1 flex flex-wrap gap-1">
+                  {a.markingDetails.map(m => (
+                    <li
+                      key={`${m.type}-${m.color}-${m.location}`}
+                      className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-xs font-semibold"
+                    >
+                      <span
+                        aria-hidden
+                        className="size-2 shrink-0 rounded-full ring-1 ring-border"
+                        style={{ backgroundColor: markingColorInfo(m.color)?.swatch }}
+                      />
+                      {describeMarking(m)}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                /* Registered before markings were structured — show the old text. */
+                a.markings && <p className="truncate text-sm text-muted-foreground">{a.markings}</p>
+              )}
             </div>
             <button
               type="button"
@@ -86,7 +108,12 @@ export function AnimalManager({ animals }: { animals: RegisteredAnimal[] }) {
           </div>
           <Input placeholder="Name (e.g. Dotty)" value={name} onChange={e => setName(e.target.value)} />
           <Input placeholder="Primary color" value={color} onChange={e => setColor(e.target.value)} />
-          <Textarea placeholder="Markings (e.g. blue ear tag #42)" value={markings} onChange={e => setMarkings(e.target.value)} />
+          <MarkingPicker
+            markings={markings}
+            onChange={setMarkings}
+            description="The more you register, the more precisely we can match a stranger's sighting to this animal."
+          />
+          <Input placeholder="Anything else about its markings (optional)" value={markingNotes} onChange={e => setMarkingNotes(e.target.value)} />
           <Input placeholder="Tag/ear number (optional)" value={tagNumber} onChange={e => setTagNumber(e.target.value)} />
           <div className="flex gap-2">
             <Button onClick={submit} disabled={pending}>{pending ? 'Saving…' : 'Register animal'}</Button>
