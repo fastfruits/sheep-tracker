@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 import type { Species } from '@/lib/types';
+import { formatMarkings, parseMarkings, type Marking } from '@/lib/markings';
 
 export interface AuthResult { ok: boolean; error?: string; needsConfirmation?: boolean }
 
@@ -12,7 +13,8 @@ export interface SignupAnimal {
   species: Species;
   name: string;
   primaryColor: string;
-  markings: string;
+  markings: Marking[];
+  markingNotes?: string;
   tagNumber?: string;
 }
 
@@ -104,14 +106,22 @@ export async function writeProfile(
 
   if (input.isFarmer && input.animals.length > 0) {
     const { error: animalError } = await supabase.from('animals').insert(
-      input.animals.map(a => ({
-        owner_id: userId,
-        species: a.species,
-        name: a.name,
-        primary_color: a.primaryColor,
-        markings: a.markings || null,
-        tag_number: a.tagNumber || null,
-      }))
+      input.animals.map(a => {
+        // These round-trip through auth user metadata (see signup()), so by the
+        // time they arrive here they are plain JSON of unknown shape.
+        const markingDetails = parseMarkings(a.markings);
+        const markingNotes = a.markingNotes?.trim() ?? '';
+        return {
+          owner_id: userId,
+          species: a.species,
+          name: a.name,
+          primary_color: a.primaryColor,
+          markings: formatMarkings(markingDetails, markingNotes) || null,
+          markings_details: markingDetails,
+          marking_notes: markingNotes || null,
+          tag_number: a.tagNumber || null,
+        };
+      })
     );
     if (animalError) console.error('animals insert:', animalError.message);
   }

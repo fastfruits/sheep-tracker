@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { matchAnimals } from '@/lib/matching';
+import { rankAnimals } from '@/lib/matching';
+import { describeMarking, parseMarkings, type Marking } from '@/lib/markings';
 import type { RegisteredAnimal, Species } from '@/lib/types';
 
 /**
@@ -26,6 +27,8 @@ export interface NotifyInput {
   reporterId: string;
   species: Species;
   primaryColor: string;
+  /** Structured markings from the report. Drives ranking and rule-outs. */
+  markings?: Marking[];
   reporterName: string;
   caption: string;
   locationLabel: string | null;
@@ -43,6 +46,14 @@ export interface MatchedAnimal {
   name: string;
   ownerName: string;
   farmName?: string;
+  /**
+   * How much the structured markings corroborated this match. The reporter's
+   * confirmation screen leads with the strong ones, so a farmer whose animal
+   * merely shares a colour is not presented as a certainty.
+   */
+  confidence: 'strong' | 'likely' | 'possible';
+  /** Plain-English list of the markings that lined up, for the reporter. */
+  matchedMarkings: string[];
 }
 
 export interface NotifyResult {
@@ -105,20 +116,32 @@ export async function notifyMatchingFarmers(
     name: a.name,
     primaryColor: a.primary_color,
     markings: a.markings,
+    // Animals registered before markings were structured have no JSON here.
+    // parseMarkings turns that into [], which scores 0 and leaves the colour
+    // rule to decide — exactly the behaviour those rows had before.
+    markingDetails: parseMarkings(a.markings_details),
+    markingNotes: a.marking_notes ?? undefined,
     tagNumber: a.tag_number ?? undefined,
   }));
 
-  const matches = matchAnimals(
-    { species: input.species, primaryColor: input.primaryColor },
+  const ranked = rankAnimals(
+    {
+      species: input.species,
+      primaryColor: input.primaryColor,
+      markings: input.markings ?? [],
+    },
     animals
   );
-  if (matches.length === 0) return { matched: [], notified: 0, errors };
+  if (ranked.length === 0) return { matched: [], notified: 0, errors };
 
-  const matched: MatchedAnimal[] = matches.map(m => ({
-    id: m.id,
-    name: m.name,
-    ownerName: m.ownerName,
-    farmName: m.farmName,
+  const matches = ranked.map(r => r.animal);
+  const matched: MatchedAnimal[] = ranked.map(r => ({
+    id: r.animal.id,
+    name: r.animal.name,
+    ownerName: r.animal.ownerName,
+    farmName: r.animal.farmName,
+    confidence: r.confidence,
+    matchedMarkings: r.matchedMarkings.map(describeMarking),
   }));
 
   const { data: inserted, error: insertError } = await db
@@ -132,6 +155,7 @@ export async function notifyMatchingFarmers(
         species: animal.species,
         reporter_name: input.reporterName,
         reporter_caption: input.caption,
+        reported_markings: (input.markings ?? []).map(describeMarking).join(', ') || null,
         location_label: input.locationLabel,
         latitude: input.latitude,
         longitude: input.longitude,

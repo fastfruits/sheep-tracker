@@ -41,6 +41,12 @@ export function AlertList({ notifications }: { notifications: FarmerNotification
           <p className="mt-2 text-sm">
             <span className="font-semibold">{n.reporterName}</span> reported: &ldquo;{n.reporterCaption}&rdquo;
           </p>
+          {n.reportedMarkings && (
+            <p className="mt-1 text-sm">
+              <span className="font-semibold text-muted-foreground">Markings seen: </span>
+              {n.reportedMarkings}
+            </p>
+          )}
           {n.locationLabel && <p className="mt-1 text-sm text-muted-foreground">📍 {n.locationLabel}</p>}
           {n.latitude != null && n.longitude != null && (
             <a

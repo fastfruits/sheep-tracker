@@ -6,6 +6,7 @@ import { getPost, getCurrentUser } from '@/lib/data/posts';
 import { speciesInfo, speciesLabel, timeAgo } from '@/lib/species';
 import { PostPhoto } from '@/components/post-photo';
 import { PostActions } from '@/components/post-actions';
+import { MarkingList } from '@/components/marking-list';
 
 export const dynamic = 'force-dynamic';
 
@@ -107,10 +108,20 @@ export default async function PostPage({ params }: PageProps<'/post/[id]'>) {
             <dd className="break-words">{post.primaryColor}</dd>
           </>
         )}
-        {post.markings && (
+        {(post.markingDetails.length > 0 || post.markings) && (
           <>
             <dt className="mt-2 font-semibold text-muted-foreground first:mt-0 sm:mt-0">Markings</dt>
-            <dd className="break-words">{post.markings}</dd>
+            <dd className="break-words">
+              {post.markingDetails.length > 0 ? (
+                <>
+                  <MarkingList markings={post.markingDetails} />
+                  {post.markingNotes && <p className="mt-2">{post.markingNotes}</p>}
+                </>
+              ) : (
+                /* Reported before markings were structured. */
+                post.markings
+              )}
+            </dd>
           </>
         )}
         {post.locationLabel && (

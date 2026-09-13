@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { PostPhoto } from './post-photo';
 import { PostActions } from './post-actions';
+import { MarkingList } from './marking-list';
 import { speciesInfo, timeAgo } from '@/lib/species';
 import type { Post } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -82,10 +83,20 @@ export function PostCard({ post, currentUserId }: { post: Post; currentUserId?: 
                 <dd className="break-words">{post.primaryColor}</dd>
               </>
             )}
-            {post.markings && (
+            {(post.markingDetails.length > 0 || post.markings) && (
               <>
                 <dt className="mt-2 font-semibold text-muted-foreground first:mt-0 sm:mt-0">Markings</dt>
-                <dd className="break-words">{post.markings}</dd>
+                <dd className="break-words">
+                  {post.markingDetails.length > 0 ? (
+                    <>
+                      <MarkingList markings={post.markingDetails} />
+                      {post.markingNotes && <p className="mt-1">{post.markingNotes}</p>}
+                    </>
+                  ) : (
+                    /* Reported before markings were structured. */
+                    post.markings
+                  )}
+                </dd>
               </>
             )}
           </dl>

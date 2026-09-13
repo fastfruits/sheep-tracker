@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import type { Species } from '@/lib/types';
+import { formatMarkings, parseMarkings, type Marking } from '@/lib/markings';
 
 async function requireUser() {
   const supabase = await createClient();
@@ -90,7 +91,13 @@ export async function toggleFollow(targetId: string, following: boolean) {
 }
 
 export async function registerAnimal(input: {
-  species: Species; name: string; primaryColor: string; markings: string; tagNumber?: string;
+  species: Species;
+  name: string;
+  primaryColor: string;
+  /** Structured markings; re-validated server-side against the vocabulary. */
+  markings: Marking[];
+  markingNotes?: string;
+  tagNumber?: string;
 }) {
   const { supabase, user } = await requireUser();
   if (!user) return { ok: false, error: 'Sign in first.' };
@@ -98,12 +105,17 @@ export async function registerAnimal(input: {
   if (!input.name.trim()) return { ok: false, error: "Enter the animal's name." };
   if (!input.primaryColor.trim()) return { ok: false, error: 'Describe the primary color.' };
 
+  const markingDetails = parseMarkings(input.markings);
+  const markingNotes = input.markingNotes?.trim() ?? '';
+
   const { error } = await supabase.from('animals').insert({
     owner_id: user.id,
     species: input.species,
     name: input.name.trim(),
     primary_color: input.primaryColor.trim(),
-    markings: input.markings.trim() || null,
+    markings: formatMarkings(markingDetails, markingNotes) || null,
+    markings_details: markingDetails,
+    marking_notes: markingNotes || null,
     tag_number: input.tagNumber?.trim() || null,
   });
 

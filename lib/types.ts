@@ -1,5 +1,7 @@
 /** Domain types, ported verbatim from the React Native build's store/app-store.tsx. */
 
+import type { Marking } from './markings';
+
 export type Species =
   | 'sheep' | 'cow' | 'goat' | 'pig' | 'horse'
   | 'dog' | 'cat' | 'chicken' | 'other';
@@ -20,7 +22,15 @@ export interface RegisteredAnimal {
   species: Species;
   name: string;
   primaryColor: string;
+  /**
+   * Human-readable summary of `markingDetails`, plus any free-text note.
+   * Kept as the display string and as the fallback for rows registered before
+   * markings were structured. Never used for matching.
+   */
   markings: string;
+  /** The structured markings matching actually runs on. */
+  markingDetails: Marking[];
+  markingNotes?: string;
   tagNumber?: string;
 }
 
@@ -40,7 +50,10 @@ export interface Post {
   caption: string;
   species?: Species;
   primaryColor?: string;
+  /** Summary string; see the note on RegisteredAnimal.markings. */
   markings?: string;
+  markingDetails: Marking[];
+  markingNotes?: string;
   locationLabel?: string;
   latitude?: number;
   longitude?: number;
@@ -60,6 +73,8 @@ export interface FarmerNotification {
   species: Species;
   reporterName: string;
   reporterCaption: string;
+  /** The reporter's structured markings, already rendered to plain English. */
+  reportedMarkings?: string;
   locationLabel?: string;
   latitude?: number;
   longitude?: number;

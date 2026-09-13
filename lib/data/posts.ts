@@ -1,5 +1,6 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
+import { parseMarkings } from '@/lib/markings';
 import type { Post, User, RegisteredAnimal, FarmerNotification } from '@/lib/types';
 
 // NOTE: comments are joined to `profiles` for the author name rather than
@@ -27,6 +28,8 @@ export function transformPost(row: any): Post {
     species: row.species,
     primaryColor: row.primary_color,
     markings: row.markings,
+    markingDetails: parseMarkings(row.markings_details),
+    markingNotes: row.marking_notes ?? undefined,
     locationLabel: row.location_label,
     latitude: row.latitude,
     longitude: row.longitude,
@@ -135,6 +138,8 @@ export async function getAnimalsByOwner(ownerId: string): Promise<RegisteredAnim
     name: a.name,
     primaryColor: a.primary_color,
     markings: a.markings,
+    markingDetails: parseMarkings(a.markings_details),
+    markingNotes: a.marking_notes ?? undefined,
     tagNumber: a.tag_number ?? undefined,
   }));
 }
@@ -155,6 +160,7 @@ export async function getNotifications(farmerId: string): Promise<FarmerNotifica
     species: n.species,
     reporterName: n.reporter_name,
     reporterCaption: n.reporter_caption,
+    reportedMarkings: n.reported_markings ?? undefined,
     locationLabel: n.location_label ?? undefined,
     latitude: n.latitude ?? undefined,
     longitude: n.longitude ?? undefined,

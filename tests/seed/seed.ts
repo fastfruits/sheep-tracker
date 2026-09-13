@@ -2,6 +2,7 @@ import { loadEnvConfig } from '@next/env';
 import { createClient } from '@supabase/supabase-js';
 import { assertLocalSupabase } from '../helpers/guard';
 import { applyLocalSupabaseEnv } from '../helpers/local-env';
+import { formatMarkings, type Marking } from '@/lib/markings';
 
 /**
  * Deterministic fixtures for the Playwright suite: one farmer with a
@@ -38,7 +39,12 @@ export const SEED_ANIMAL = {
   species: 'sheep' as const,
   name: 'Dolly',
   primaryColor: 'white',
-  markings: 'blue paint on back',
+  // Structured, so a sighting picking the same values from the report form
+  // scores an exact marking match rather than only a colour match.
+  markings: [
+    { type: 'paint', color: 'blue', location: 'back' },
+    { type: 'ear_tag', color: 'yellow', location: 'left_ear' },
+  ] satisfies Marking[],
 };
 
 function localEnv() {
@@ -92,7 +98,8 @@ export async function seed() {
     species: SEED_ANIMAL.species,
     name: SEED_ANIMAL.name,
     primary_color: SEED_ANIMAL.primaryColor,
-    markings: SEED_ANIMAL.markings,
+    markings: formatMarkings(SEED_ANIMAL.markings),
+    markings_details: SEED_ANIMAL.markings,
   });
   if (animalError) throw new Error(`animal: ${animalError.message}`);
 

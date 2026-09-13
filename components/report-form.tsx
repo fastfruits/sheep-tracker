@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 
 import { SPECIES_LIST } from '@/lib/species';
+import type { Marking } from '@/lib/markings';
+import { MarkingPicker } from '@/components/marking-picker';
 import { reportSighting, type ReportResult } from '@/app/actions/report';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +17,7 @@ import { cn } from '@/lib/utils';
 export function ReportForm({ signedIn }: { signedIn: boolean }) {
   const [pending, startTransition] = useTransition();
   const [species, setSpecies] = useState<string>('');
+  const [markings, setMarkings] = useState<Marking[]>([]);
   const [photo, setPhoto] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -64,6 +67,9 @@ export function ReportForm({ signedIn }: { signedIn: boolean }) {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
     form.set('species', species);
+    // The picker is controlled React state, not a named input, so it has to be
+    // serialised onto the FormData by hand. The action re-validates it.
+    form.set('markingDetails', JSON.stringify(markings));
     if (photo) form.set('photo', photo);
     if (coords) {
       form.set('latitude', String(coords.latitude));
@@ -110,6 +116,19 @@ export function ReportForm({ signedIn }: { signedIn: boolean }) {
                   ) : (
                     <> looks like a match, but we couldn&apos;t send the alert.</>
                   )}
+                  {/* Matches are ordered strongest first. Saying *why* one is
+                      strong stops a colour-only coincidence reading as a
+                      certainty, which is what the free-text box used to do. */}
+                  {m.matchedMarkings.length > 0 ? (
+                    <span className="mt-0.5 block text-xs text-muted-foreground">
+                      {m.confidence === 'strong' ? 'Strong match' : 'Likely match'} — you
+                      both described: {m.matchedMarkings.join(', ')}.
+                    </span>
+                  ) : (
+                    <span className="mt-0.5 block text-xs text-muted-foreground">
+                      Matched on animal type and colour only.
+                    </span>
+                  )}
                 </li>
               ))}
             </ul>
@@ -128,7 +147,7 @@ export function ReportForm({ signedIn }: { signedIn: boolean }) {
               <Link href={`/post/${result.postId}`}>View the sighting</Link>
             </Button>
           )}
-          <Button variant="outline" className="w-full sm:w-auto" onClick={() => { setResult(null); setPhoto(null); setPreview(null); setSpecies(''); setCoords(null); setLocationLabel(''); }}>
+          <Button variant="outline" className="w-full sm:w-auto" onClick={() => { setResult(null); setPhoto(null); setPreview(null); setSpecies(''); setMarkings([]); setCoords(null); setLocationLabel(''); }}>
             Report another
           </Button>
         </div>
@@ -209,10 +228,16 @@ export function ReportForm({ signedIn }: { signedIn: boolean }) {
           placeholder="e.g. white, brown, black and white" />
       </div>
 
+      <MarkingPicker
+        markings={markings}
+        onChange={setMarkings}
+        description="Tags, paint and collars are how we match your sighting to a farmer's animal. Add what you can see — you can add more than one."
+      />
+
       <div>
-        <Label htmlFor="markings">Distinguishing markings</Label>
-        <Textarea id="markings" name="markings" className="mt-2"
-          placeholder="e.g. blue paint on back, yellow ear tag #7, red collar" />
+        <Label htmlFor="markingNotes">Anything else about its markings</Label>
+        <Input id="markingNotes" name="markingNotes" className="mt-2"
+          placeholder="Optional — e.g. torn left ear, limping" />
       </div>
 
       <div>

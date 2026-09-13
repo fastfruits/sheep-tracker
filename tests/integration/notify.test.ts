@@ -4,6 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { notifyMatchingFarmers } from '@/lib/notify';
 import { adminClient, anonClient } from '../helpers/db';
 import { Fixtures, type TestUser } from '../helpers/fixtures';
+import type { Marking } from '@/lib/markings';
 
 /**
  * `lib/notify.ts` against a real local Postgres, with real RLS.
@@ -80,9 +81,18 @@ describe('notifyMatchingFarmers', () => {
 
     expect(result.notified).toBe(1);
     expect(result.errors).toEqual([]);
-    // The exact shape components/report-form.tsx renders.
+    // The exact shape components/report-form.tsx renders. A colour-only match
+    // reports `possible` with nothing corroborating it, which is what stops
+    // the success screen presenting a coincidence as a certainty.
     expect(result.matched).toEqual([
-      { id: animal.id, name: 'Dolly', ownerName: farmer.name, farmName: 'Ballyroan Farm' },
+      {
+        id: animal.id,
+        name: 'Dolly',
+        ownerName: farmer.name,
+        farmName: 'Ballyroan Farm',
+        confidence: 'possible',
+        matchedMarkings: [],
+      },
     ]);
 
     const rows = await alertsFor(post.id);
@@ -95,6 +105,7 @@ describe('notifyMatchingFarmers', () => {
     expect(row.species).toBe('sheep');
     expect(row.reporter_name).toBe(reporter.name);
     expect(row.reporter_caption).toBe('Spotted a sheep near the crossroads');
+    expect(row.reported_markings).toBeNull();
     expect(row.location_label).toBe('Ballyroan, Laois');
     expect(row.latitude).toBeCloseTo(52.9);
     expect(row.longitude).toBeCloseTo(-7.3);
@@ -255,6 +266,102 @@ describe('notifyMatchingFarmers', () => {
     } finally {
       process.env.SUPABASE_SERVICE_ROLE_KEY = original;
     }
+  });
+});
+
+describe('structured markings', () => {
+  // The jsonb round trip. The unit tests pin the scoring rules; these pin that
+  // the values actually survive Postgres and reach rankAnimals() as objects —
+  // a `markings_details` column the hosted database is missing would fail here
+  // the way the notifications columns failed silently in production.
+
+  it('ranks an exactly-corroborated animal above a colour-only one', async () => {
+    const colour = uniqueColour();
+    const farmer = await fx.createFarmer();
+    const tagged = await fx.createAnimal(farmer, {
+      species: 'sheep',
+      name: 'Dolly',
+      primaryColor: colour,
+      markings: [{ type: 'ear_tag', color: 'yellow', location: 'left_ear' }],
+    });
+    await fx.createAnimal(farmer, { species: 'sheep', name: 'Shaun', primaryColor: colour });
+
+    const reporter = await fx.createReporter();
+    const markings: Marking[] = [{ type: 'ear_tag', color: 'yellow', location: 'left_ear' }];
+    const post = await fx.createSighting(reporter, { species: 'sheep', primaryColor: colour, markings });
+
+    const result = await notifyMatchingFarmers(
+      inputFor(post, reporter, colour, { markings }),
+      { db }
+    );
+
+    expect(result.notified).toBe(2);
+    expect(result.matched[0].id).toBe(tagged.id);
+    expect(result.matched[0].confidence).toBe('strong');
+    expect(result.matched[0].matchedMarkings).toEqual(['yellow ear tag on left ear']);
+    expect(result.matched[1].confidence).toBe('possible');
+  });
+
+  it('rules out an animal whose marking is contradicted in the same place', async () => {
+    const colour = uniqueColour();
+    const farmer = await fx.createFarmer();
+    await fx.createAnimal(farmer, {
+      species: 'sheep',
+      name: 'Dolly',
+      primaryColor: colour,
+      markings: [{ type: 'ear_tag', color: 'blue', location: 'left_ear' }],
+    });
+
+    const reporter = await fx.createReporter();
+    const markings: Marking[] = [{ type: 'ear_tag', color: 'yellow', location: 'left_ear' }];
+    const post = await fx.createSighting(reporter, { species: 'sheep', primaryColor: colour, markings });
+
+    const result = await notifyMatchingFarmers(
+      inputFor(post, reporter, colour, { markings }),
+      { db }
+    );
+
+    // Same species, same colour — the old rule would have alerted this farmer.
+    expect(result.matched).toEqual([]);
+    expect(await alertsFor(post.id)).toHaveLength(0);
+  });
+
+  it('carries the reported markings onto the alert row', async () => {
+    const colour = uniqueColour();
+    const farmer = await fx.createFarmer();
+    await fx.createAnimal(farmer, { species: 'sheep', name: 'Dolly', primaryColor: colour });
+
+    const reporter = await fx.createReporter();
+    const markings: Marking[] = [
+      { type: 'paint', color: 'blue', location: 'back' },
+      { type: 'collar', color: 'red', location: 'neck' },
+    ];
+    const post = await fx.createSighting(reporter, { species: 'sheep', primaryColor: colour, markings });
+
+    await notifyMatchingFarmers(inputFor(post, reporter, colour, { markings }), { db });
+
+    const [row] = await alertsFor(post.id);
+    expect(row.reported_markings).toBe('blue spray paint on back, red collar on neck');
+  });
+
+  it('matches an animal registered before markings were structured', async () => {
+    // Its `markings_details` is the column default, so it scores 0 and the
+    // colour rule decides — exactly as it did before this change.
+    const colour = uniqueColour();
+    const farmer = await fx.createFarmer();
+    await fx.createAnimal(farmer, { species: 'sheep', name: 'Dolly', primaryColor: colour });
+
+    const reporter = await fx.createReporter();
+    const markings: Marking[] = [{ type: 'ear_tag', color: 'yellow', location: 'left_ear' }];
+    const post = await fx.createSighting(reporter, { species: 'sheep', primaryColor: colour, markings });
+
+    const result = await notifyMatchingFarmers(
+      inputFor(post, reporter, colour, { markings }),
+      { db }
+    );
+
+    expect(result.notified).toBe(1);
+    expect(result.matched[0].confidence).toBe('possible');
   });
 });
 
