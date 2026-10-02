@@ -20,7 +20,7 @@
 --
 -- Note: writes now require an authenticated user. The `user_id: 'guest'`
 -- fallback in store/app-store.tsx was already non-functional (it is not a uuid
--- and violates the foreign key), so this does not remove working behaviour —
+-- and violates the foreign key), so this does not remove working behavior —
 -- but anonymous reporting is not possible without a further design change.
 -- ═══════════════════════════════════════════════════════════════════════════
 

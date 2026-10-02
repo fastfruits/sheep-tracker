@@ -9,7 +9,7 @@ import { useState } from 'react';
  * Needed because the storage bucket contains zero-byte objects written by the
  * old React Native upload path: they return 200 with content-type image/jpeg
  * and no body, so next/image rejects them with a 400 and the card would show a
- * blank grey rectangle. Failing over to the emoji keeps the card readable.
+ * blank gray rectangle. Failing over to the emoji keeps the card readable.
  */
 export function PostPhoto({
   src,

@@ -19,17 +19,17 @@ export interface AnimalMatch {
   matchedMarkings: Marking[];
   /** Reported markings that directly contradicted a registered one. */
   conflictingMarkings: Marking[];
-  /** Whether the colour rule alone would have kept this animal. */
+  /** Whether the color rule alone would have kept this animal. */
   colorMatched: boolean;
 }
 
-/** Same tag, same colour, same place — the strongest signal available. */
+/** Same tag, same color, same place — the strongest signal available. */
 const SCORE_EXACT = 3;
-/** Same tag and colour, but one side did not say where. */
+/** Same tag and color, but one side did not say where. */
 const SCORE_LOCATION_UNSTATED = 2;
-/** Same tag and colour in different places. Suggestive, not conclusive. */
+/** Same tag and color in different places. Suggestive, not conclusive. */
 const SCORE_LOCATION_DIFFERS = 1;
-/** Same tag in the same place, different colour. Not a weak match — a denial. */
+/** Same tag in the same place, different color. Not a weak match — a denial. */
 const CONFLICT = -1;
 
 /** Ear positions overlap: "both ears" satisfies a left-ear or right-ear claim. */
@@ -45,7 +45,7 @@ function locationsAgree(a: MarkingLocation, b: MarkingLocation): boolean {
 /**
  * Score one reported marking against one registered marking.
  *
- * Returns `CONFLICT` only for a same-type, same-place, different-colour pair —
+ * Returns `CONFLICT` only for a same-type, same-place, different-color pair —
  * a yellow left-ear tag where the farmer registered a blue one. Everything
  * softer scores 0, because a reporter who missed a marking is far more common
  * than a reporter who invented a contradictory one.
@@ -63,7 +63,7 @@ function pairScore(reported: Marking, registered: Marking): number {
     return SCORE_LOCATION_DIFFERS;
   }
 
-  // Same type, different colour. A definite colour clash in a definite place
+  // Same type, different color. A definite color clash in a definite place
   // is the one case where structured markings should rule an animal out.
   if (!locationUnstated && agree) return CONFLICT;
   return 0;
@@ -82,18 +82,18 @@ function colorsOverlap(reported: string, registered: string): boolean {
 /**
  * Decide which registered animals a sighting might be, and how strongly.
  *
- * The colour rule is unchanged from the React Native build — same species, and
- * colours that overlap in either direction or share a word longer than two
+ * The color rule is unchanged from the React Native build — same species, and
+ * colors that overlap in either direction or share a word longer than two
  * characters ("black and white" matches "white"). It is deliberately loose and
  * over-matches on purpose.
  *
- * Structured markings now sit on top of it and do three things the loose colour
+ * Structured markings now sit on top of it and do three things the loose color
  * rule could not:
  *
  *   1. RANK. A sighting that names the same ear tag as a registered animal
- *      outranks one that merely shares a colour, so the farmer sees the real
+ *      outranks one that merely shares a color, so the farmer sees the real
  *      candidate first.
- *   2. RESCUE. A strong marking match keeps an animal whose registered colour
+ *   2. RESCUE. A strong marking match keeps an animal whose registered color
  *      disagrees — people describe the same fleece as "white", "cream" and
  *      "dirty white", but a yellow left-ear tag is a yellow left-ear tag.
  *   3. RULE OUT. A marking that contradicts the registered one, with nothing
@@ -108,7 +108,7 @@ export function rankAnimals(
   const reportedColor = (sighting.primaryColor || '').trim().toLowerCase();
   const reportedMarkings = sighting.markings ?? [];
 
-  // Without this guard an empty colour matches *every* animal of the species,
+  // Without this guard an empty color matches *every* animal of the species,
   // because `registered.includes('')` is always true — so one blank field would
   // alert every farmer who keeps sheep. A sighting carrying structured markings
   // can still get through on those alone.
@@ -150,7 +150,7 @@ export function rankAnimals(
     // to remove.
     if (conflictingMarkings.length > 0 && score === 0) continue;
 
-    // Colour is still the baseline gate, but an exact marking match overrides
+    // Color is still the baseline gate, but an exact marking match overrides
     // it rather than being wasted.
     if (!colorMatched && score < SCORE_EXACT) continue;
 

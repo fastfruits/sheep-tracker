@@ -11,7 +11,7 @@ import type { RegisteredAnimal, Species } from '@/lib/types';
  * living here rather than inside the Server Action. `app/actions/report.ts`
  * cannot be imported by a test runner: it calls `cookies()` on its first line
  * and `revalidatePath()` on its last. This module can, so the matching rules
- * and the alert-writing behaviour are directly testable with no mocking.
+ * and the alert-writing behavior are directly testable with no mocking.
  *
  * Never call `after()` from here — it needs the request work store and would
  * throw or silently no-op. Deferred work belongs in the action layer.
@@ -49,7 +49,7 @@ export interface MatchedAnimal {
   /**
    * How much the structured markings corroborated this match. The reporter's
    * confirmation screen leads with the strong ones, so a farmer whose animal
-   * merely shares a colour is not presented as a certainty.
+   * merely shares a color is not presented as a certainty.
    */
   confidence: 'strong' | 'likely' | 'possible';
   /** Plain-English list of the markings that lined up, for the reporter. */
@@ -117,8 +117,8 @@ export async function notifyMatchingFarmers(
     primaryColor: a.primary_color,
     markings: a.markings,
     // Animals registered before markings were structured have no JSON here.
-    // parseMarkings turns that into [], which scores 0 and leaves the colour
-    // rule to decide — exactly the behaviour those rows had before.
+    // parseMarkings turns that into [], which scores 0 and leaves the color
+    // rule to decide — exactly the behavior those rows had before.
     markingDetails: parseMarkings(a.markings_details),
     markingNotes: a.marking_notes ?? undefined,
     tagNumber: a.tag_number ?? undefined,

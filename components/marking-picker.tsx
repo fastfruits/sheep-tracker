@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 
 /**
- * Builds a list of structured markings: what it is, what colour it is, where
+ * Builds a list of structured markings: what it is, what color it is, where
  * it is. Shared by the sighting report, farmer sign-up and the account page so
  * a reporter and a farmer are literally choosing from the same lists — which
  * is what makes lib/matching.ts able to compare them.
@@ -41,7 +41,7 @@ export function MarkingPicker({
 
   function add() {
     if (!type) { setError('Pick what the marking is.'); return; }
-    if (!color) { setError('Pick the colour of the marking.'); return; }
+    if (!color) { setError('Pick the color of the marking.'); return; }
 
     const next: Marking = { type, color, location };
     if (markings.some(m => m.type === next.type && m.color === next.color && m.location === next.location)) {
@@ -120,7 +120,7 @@ export function MarkingPicker({
 
           <div>
             <Label className="mb-2 block text-xs uppercase tracking-wide text-muted-foreground">
-              Colour of the {type ? markingTypeInfo(type)?.label.toLowerCase() : 'marking'}
+              Color of the {type ? markingTypeInfo(type)?.label.toLowerCase() : 'marking'}
             </Label>
             <div className="flex flex-wrap gap-2">
               {MARKING_COLORS.map(c => (

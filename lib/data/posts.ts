@@ -4,7 +4,7 @@ import { parseMarkings } from '@/lib/markings';
 import type { Post, User, RegisteredAnimal, FarmerNotification } from '@/lib/types';
 
 // NOTE: comments are joined to `profiles` for the author name rather than
-// reading a denormalised `comments.user_name`. The RN build selected
+// reading a denormalized `comments.user_name`. The RN build selected
 // `user_name`, but that column does not exist on the live database — the whole
 // query failed with Postgres 42703, which is why the production feed was always
 // empty. Joining also stops the stored name going stale when a user renames.

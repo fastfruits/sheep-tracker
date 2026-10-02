@@ -42,7 +42,7 @@ describe('describeMarking', () => {
     expect(describeMarking(mark('collar', 'red'))).toBe('red collar');
   });
 
-  it('omits the colour word for "other"', () => {
+  it('omits the color word for "other"', () => {
     expect(describeMarking(mark('brand', 'other', 'rump'))).toBe('brand on rump / tail');
   });
 });
@@ -77,7 +77,7 @@ describe('parseMarkings', () => {
   it('returns [] for null, undefined and legacy free text', () => {
     // Every animal registered before this change has null in the jsonb column
     // and prose in the text one. Both must degrade to "no structured markings"
-    // so the colour rule decides, exactly as it did before.
+    // so the color rule decides, exactly as it did before.
     expect(parseMarkings(null)).toEqual([]);
     expect(parseMarkings(undefined)).toEqual([]);
     expect(parseMarkings('blue paint on back')).toEqual([]);
@@ -95,7 +95,13 @@ describe('parseMarkings', () => {
     ])).toEqual([mark('ear_tag', 'blue', 'left_ear')]);
   });
 
-  it('falls back to "unknown" for an unrecognised location', () => {
+  it('reads the legacy "grey" spelling as "gray"', () => {
+    // Stored before the vocabulary switched to American spelling.
+    expect(parseMarkings([{ type: 'ear_tag', color: 'grey', location: 'left_ear' }]))
+      .toEqual([mark('ear_tag', 'gray', 'left_ear')]);
+  });
+
+  it('falls back to "unknown" for an unrecognized location', () => {
     // The location is optional, so a bad one degrades the entry instead of
     // discarding a marking the user really did see.
     expect(parseMarkings([{ type: 'ear_tag', color: 'blue', location: 'left_hoof' }]))

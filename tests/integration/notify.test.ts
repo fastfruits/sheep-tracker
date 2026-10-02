@@ -12,17 +12,17 @@ import type { Marking } from '@/lib/markings';
  * Isolation note, and it is load-bearing: matching reads EVERY registered
  * animal of the reported species across all owners — that is the feature, not
  * an accident. So scoping assertions by post_id is not enough; animals seeded
- * by a neighbouring test would show up in `matched` and break the counts.
+ * by a neighboring test would show up in `matched` and break the counts.
  *
- * Each test therefore invents a unique colour token via `uniqueColour()` and
- * uses it for both the sighting and the animals it cares about. Colours are
+ * Each test therefore invents a unique color token via `uniqueColor()` and
+ * uses it for both the sighting and the animals it cares about. Colors are
  * free text in this schema, so this is realistic input, and the match rule
  * (substring / shared-word) cannot connect two distinct random tokens. That
- * buys per-test isolation with no truncation and no serialisation.
+ * buys per-test isolation with no truncation and no serialization.
  */
 
-/** A colour no other test will match on. */
-function uniqueColour() {
+/** A color no other test will match on. */
+function uniqueColor() {
   return `c${randomUUID().replace(/-/g, '').slice(0, 12)}`;
 }
 
@@ -67,21 +67,21 @@ function inputFor(
 
 describe('notifyMatchingFarmers', () => {
   it('writes exactly one row, with every column populated', async () => {
-    const colour = uniqueColour();
+    const color = uniqueColor();
     const farmer = await fx.createFarmer('Ballyroan Farm');
     const animal = await fx.createAnimal(farmer, {
       species: 'sheep',
       name: 'Dolly',
-      primaryColor: colour,
+      primaryColor: color,
     });
     const reporter = await fx.createReporter();
-    const post = await fx.createSighting(reporter, { species: 'sheep', primaryColor: colour });
+    const post = await fx.createSighting(reporter, { species: 'sheep', primaryColor: color });
 
-    const result = await notifyMatchingFarmers(inputFor(post, reporter, colour), { db });
+    const result = await notifyMatchingFarmers(inputFor(post, reporter, color), { db });
 
     expect(result.notified).toBe(1);
     expect(result.errors).toEqual([]);
-    // The exact shape components/report-form.tsx renders. A colour-only match
+    // The exact shape components/report-form.tsx renders. A color-only match
     // reports `possible` with nothing corroborating it, which is what stops
     // the success screen presenting a coincidence as a certainty.
     expect(result.matched).toEqual([
@@ -114,13 +114,13 @@ describe('notifyMatchingFarmers', () => {
   });
 
   it('writes nothing when no animal matches', async () => {
-    const colour = uniqueColour();
+    const color = uniqueColor();
     const farmer = await fx.createFarmer();
-    await fx.createAnimal(farmer, { species: 'sheep', name: 'Blackie', primaryColor: uniqueColour() });
+    await fx.createAnimal(farmer, { species: 'sheep', name: 'Blackie', primaryColor: uniqueColor() });
     const reporter = await fx.createReporter();
-    const post = await fx.createSighting(reporter, { species: 'sheep', primaryColor: colour });
+    const post = await fx.createSighting(reporter, { species: 'sheep', primaryColor: color });
 
-    const result = await notifyMatchingFarmers(inputFor(post, reporter, colour), { db });
+    const result = await notifyMatchingFarmers(inputFor(post, reporter, color), { db });
 
     expect(result.matched).toEqual([]);
     expect(result.notified).toBe(0);
@@ -129,37 +129,37 @@ describe('notifyMatchingFarmers', () => {
   });
 
   it('filters by species in SQL, not just in the match rule', async () => {
-    // A cow of exactly the reported colour must produce no row. Asserting the
+    // A cow of exactly the reported color must produce no row. Asserting the
     // row count rather than `matched` is the point: matchAnimals would filter
     // this out anyway, so only a count catches a dropped `.eq('species', …)`.
-    const colour = uniqueColour();
+    const color = uniqueColor();
     const farmer = await fx.createFarmer();
-    await fx.createAnimal(farmer, { species: 'cow', name: 'Daisy', primaryColor: colour });
+    await fx.createAnimal(farmer, { species: 'cow', name: 'Daisy', primaryColor: color });
     const reporter = await fx.createReporter();
-    const post = await fx.createSighting(reporter, { species: 'sheep', primaryColor: colour });
+    const post = await fx.createSighting(reporter, { species: 'sheep', primaryColor: color });
 
-    await notifyMatchingFarmers(inputFor(post, reporter, colour), { db });
+    await notifyMatchingFarmers(inputFor(post, reporter, color), { db });
 
     expect(await alertsFor(post.id)).toHaveLength(0);
   });
 
   it('writes one row per matching animal when a farmer owns several', async () => {
-    const colour = uniqueColour();
+    const color = uniqueColor();
     const farmer = await fx.createFarmer();
     const dolly = await fx.createAnimal(farmer, {
       species: 'sheep',
       name: 'Dolly',
-      primaryColor: colour,
+      primaryColor: color,
     });
     const shaun = await fx.createAnimal(farmer, {
       species: 'sheep',
       name: 'Shaun',
-      primaryColor: colour,
+      primaryColor: color,
     });
     const reporter = await fx.createReporter();
-    const post = await fx.createSighting(reporter, { species: 'sheep', primaryColor: colour });
+    const post = await fx.createSighting(reporter, { species: 'sheep', primaryColor: color });
 
-    const result = await notifyMatchingFarmers(inputFor(post, reporter, colour), { db });
+    const result = await notifyMatchingFarmers(inputFor(post, reporter, color), { db });
 
     expect(result.notified).toBe(2);
     const rows = await alertsFor(post.id);
@@ -169,15 +169,15 @@ describe('notifyMatchingFarmers', () => {
   });
 
   it('notifies each of two different owners once', async () => {
-    const colour = uniqueColour();
+    const color = uniqueColor();
     const farmerA = await fx.createFarmer('Farm A');
     const farmerB = await fx.createFarmer('Farm B');
-    await fx.createAnimal(farmerA, { species: 'sheep', name: 'Dolly', primaryColor: colour });
-    await fx.createAnimal(farmerB, { species: 'sheep', name: 'Snowy', primaryColor: colour });
+    await fx.createAnimal(farmerA, { species: 'sheep', name: 'Dolly', primaryColor: color });
+    await fx.createAnimal(farmerB, { species: 'sheep', name: 'Snowy', primaryColor: color });
     const reporter = await fx.createReporter();
-    const post = await fx.createSighting(reporter, { species: 'sheep', primaryColor: colour });
+    const post = await fx.createSighting(reporter, { species: 'sheep', primaryColor: color });
 
-    const result = await notifyMatchingFarmers(inputFor(post, reporter, colour), { db });
+    const result = await notifyMatchingFarmers(inputFor(post, reporter, color), { db });
 
     expect(result.notified).toBe(2);
     const rows = await alertsFor(post.id);
@@ -189,12 +189,12 @@ describe('notifyMatchingFarmers', () => {
   it('does not notify a farmer about their own sighting', async () => {
     // A farmer reporting their own escaped sheep used to alert themselves and
     // light their own nav badge.
-    const colour = uniqueColour();
+    const color = uniqueColor();
     const farmer = await fx.createFarmer();
-    await fx.createAnimal(farmer, { species: 'sheep', name: 'Dolly', primaryColor: colour });
-    const post = await fx.createSighting(farmer, { species: 'sheep', primaryColor: colour });
+    await fx.createAnimal(farmer, { species: 'sheep', name: 'Dolly', primaryColor: color });
+    const post = await fx.createSighting(farmer, { species: 'sheep', primaryColor: color });
 
-    const result = await notifyMatchingFarmers(inputFor(post, farmer, colour), { db });
+    const result = await notifyMatchingFarmers(inputFor(post, farmer, color), { db });
 
     expect(result.matched).toEqual([]);
     expect(result.notified).toBe(0);
@@ -203,21 +203,21 @@ describe('notifyMatchingFarmers', () => {
 
   it('still notifies other farmers when the reporter is also a farmer', async () => {
     // The owner exclusion must be scoped to the reporter, not to farmers generally.
-    const colour = uniqueColour();
-    const owner = await fx.createFarmer('Neighbour Farm');
-    await fx.createAnimal(owner, { species: 'sheep', name: 'Dolly', primaryColor: colour });
+    const color = uniqueColor();
+    const owner = await fx.createFarmer('Neighbor Farm');
+    await fx.createAnimal(owner, { species: 'sheep', name: 'Dolly', primaryColor: color });
     const reportingFarmer = await fx.createFarmer('Reporter Farm');
     await fx.createAnimal(reportingFarmer, {
       species: 'sheep',
       name: 'Mine',
-      primaryColor: colour,
+      primaryColor: color,
     });
     const post = await fx.createSighting(reportingFarmer, {
       species: 'sheep',
-      primaryColor: colour,
+      primaryColor: color,
     });
 
-    const result = await notifyMatchingFarmers(inputFor(post, reportingFarmer, colour), { db });
+    const result = await notifyMatchingFarmers(inputFor(post, reportingFarmer, color), { db });
 
     expect(result.notified).toBe(1);
     const rows = await alertsFor(post.id);
@@ -230,14 +230,14 @@ describe('notifyMatchingFarmers', () => {
     // foreign key rejects the insert. This is the shape of the bug that was
     // live in production, where the detail columns did not exist at all and
     // every insert failed while the UI still said "Farmer notified!".
-    const colour = uniqueColour();
+    const color = uniqueColor();
     const farmer = await fx.createFarmer();
-    await fx.createAnimal(farmer, { species: 'sheep', name: 'Dolly', primaryColor: colour });
+    await fx.createAnimal(farmer, { species: 'sheep', name: 'Dolly', primaryColor: color });
     const reporter = await fx.createReporter();
-    const post = await fx.createSighting(reporter, { species: 'sheep', primaryColor: colour });
+    const post = await fx.createSighting(reporter, { species: 'sheep', primaryColor: color });
     await db.from('posts').delete().eq('id', post.id);
 
-    const result = await notifyMatchingFarmers(inputFor(post, reporter, colour), { db });
+    const result = await notifyMatchingFarmers(inputFor(post, reporter, color), { db });
 
     expect(result.matched).toHaveLength(1);
     expect(result.notified).toBe(0);
@@ -249,7 +249,7 @@ describe('notifyMatchingFarmers', () => {
   it('does not throw when the service-role key is missing', async () => {
     // Mirrors the degraded path in the action: the sighting is still saved and
     // visible in the feed, only the alert is skipped.
-    const colour = uniqueColour();
+    const color = uniqueColor();
     // Create the user before unsetting the key — the fixtures need it too, and
     // this test is about notify's own degradation, not the fixtures'.
     const reporter = await fx.createReporter();
@@ -258,7 +258,7 @@ describe('notifyMatchingFarmers', () => {
     delete process.env.SUPABASE_SERVICE_ROLE_KEY;
     try {
       const result = await notifyMatchingFarmers(
-        inputFor({ id: '00000000-0000-0000-0000-000000000000' }, reporter, colour)
+        inputFor({ id: '00000000-0000-0000-0000-000000000000' }, reporter, color)
       );
       expect(result.matched).toEqual([]);
       expect(result.notified).toBe(0);
@@ -275,23 +275,23 @@ describe('structured markings', () => {
   // a `markings_details` column the hosted database is missing would fail here
   // the way the notifications columns failed silently in production.
 
-  it('ranks an exactly-corroborated animal above a colour-only one', async () => {
-    const colour = uniqueColour();
+  it('ranks an exactly-corroborated animal above a color-only one', async () => {
+    const color = uniqueColor();
     const farmer = await fx.createFarmer();
     const tagged = await fx.createAnimal(farmer, {
       species: 'sheep',
       name: 'Dolly',
-      primaryColor: colour,
+      primaryColor: color,
       markings: [{ type: 'ear_tag', color: 'yellow', location: 'left_ear' }],
     });
-    await fx.createAnimal(farmer, { species: 'sheep', name: 'Shaun', primaryColor: colour });
+    await fx.createAnimal(farmer, { species: 'sheep', name: 'Shaun', primaryColor: color });
 
     const reporter = await fx.createReporter();
     const markings: Marking[] = [{ type: 'ear_tag', color: 'yellow', location: 'left_ear' }];
-    const post = await fx.createSighting(reporter, { species: 'sheep', primaryColor: colour, markings });
+    const post = await fx.createSighting(reporter, { species: 'sheep', primaryColor: color, markings });
 
     const result = await notifyMatchingFarmers(
-      inputFor(post, reporter, colour, { markings }),
+      inputFor(post, reporter, color, { markings }),
       { db }
     );
 
@@ -303,42 +303,42 @@ describe('structured markings', () => {
   });
 
   it('rules out an animal whose marking is contradicted in the same place', async () => {
-    const colour = uniqueColour();
+    const color = uniqueColor();
     const farmer = await fx.createFarmer();
     await fx.createAnimal(farmer, {
       species: 'sheep',
       name: 'Dolly',
-      primaryColor: colour,
+      primaryColor: color,
       markings: [{ type: 'ear_tag', color: 'blue', location: 'left_ear' }],
     });
 
     const reporter = await fx.createReporter();
     const markings: Marking[] = [{ type: 'ear_tag', color: 'yellow', location: 'left_ear' }];
-    const post = await fx.createSighting(reporter, { species: 'sheep', primaryColor: colour, markings });
+    const post = await fx.createSighting(reporter, { species: 'sheep', primaryColor: color, markings });
 
     const result = await notifyMatchingFarmers(
-      inputFor(post, reporter, colour, { markings }),
+      inputFor(post, reporter, color, { markings }),
       { db }
     );
 
-    // Same species, same colour — the old rule would have alerted this farmer.
+    // Same species, same color — the old rule would have alerted this farmer.
     expect(result.matched).toEqual([]);
     expect(await alertsFor(post.id)).toHaveLength(0);
   });
 
   it('carries the reported markings onto the alert row', async () => {
-    const colour = uniqueColour();
+    const color = uniqueColor();
     const farmer = await fx.createFarmer();
-    await fx.createAnimal(farmer, { species: 'sheep', name: 'Dolly', primaryColor: colour });
+    await fx.createAnimal(farmer, { species: 'sheep', name: 'Dolly', primaryColor: color });
 
     const reporter = await fx.createReporter();
     const markings: Marking[] = [
       { type: 'paint', color: 'blue', location: 'back' },
       { type: 'collar', color: 'red', location: 'neck' },
     ];
-    const post = await fx.createSighting(reporter, { species: 'sheep', primaryColor: colour, markings });
+    const post = await fx.createSighting(reporter, { species: 'sheep', primaryColor: color, markings });
 
-    await notifyMatchingFarmers(inputFor(post, reporter, colour, { markings }), { db });
+    await notifyMatchingFarmers(inputFor(post, reporter, color, { markings }), { db });
 
     const [row] = await alertsFor(post.id);
     expect(row.reported_markings).toBe('blue spray paint on back, red collar on neck');
@@ -346,17 +346,17 @@ describe('structured markings', () => {
 
   it('matches an animal registered before markings were structured', async () => {
     // Its `markings_details` is the column default, so it scores 0 and the
-    // colour rule decides — exactly as it did before this change.
-    const colour = uniqueColour();
+    // color rule decides — exactly as it did before this change.
+    const color = uniqueColor();
     const farmer = await fx.createFarmer();
-    await fx.createAnimal(farmer, { species: 'sheep', name: 'Dolly', primaryColor: colour });
+    await fx.createAnimal(farmer, { species: 'sheep', name: 'Dolly', primaryColor: color });
 
     const reporter = await fx.createReporter();
     const markings: Marking[] = [{ type: 'ear_tag', color: 'yellow', location: 'left_ear' }];
-    const post = await fx.createSighting(reporter, { species: 'sheep', primaryColor: colour, markings });
+    const post = await fx.createSighting(reporter, { species: 'sheep', primaryColor: color, markings });
 
     const result = await notifyMatchingFarmers(
-      inputFor(post, reporter, colour, { markings }),
+      inputFor(post, reporter, color, { markings }),
       { db }
     );
 
@@ -370,14 +370,14 @@ describe('row-level security', () => {
   // running tests against a real Postgres rather than mocking the client.
 
   it('hides one farmer’s notifications from another', async () => {
-    const colour = uniqueColour();
+    const color = uniqueColor();
     const farmerA = await fx.createFarmer();
     const farmerB = await fx.createFarmer();
-    await fx.createAnimal(farmerA, { species: 'sheep', name: 'Dolly', primaryColor: colour });
-    await fx.createAnimal(farmerB, { species: 'sheep', name: 'Snowy', primaryColor: colour });
+    await fx.createAnimal(farmerA, { species: 'sheep', name: 'Dolly', primaryColor: color });
+    await fx.createAnimal(farmerB, { species: 'sheep', name: 'Snowy', primaryColor: color });
     const reporter = await fx.createReporter();
-    const post = await fx.createSighting(reporter, { species: 'sheep', primaryColor: colour });
-    await notifyMatchingFarmers(inputFor(post, reporter, colour), { db });
+    const post = await fx.createSighting(reporter, { species: 'sheep', primaryColor: color });
+    await notifyMatchingFarmers(inputFor(post, reporter, color), { db });
 
     const asA = await anonClient({ email: farmerA.email, password: farmerA.password });
     const { data } = await asA.from('notifications').select('*').eq('post_id', post.id);
@@ -389,10 +389,10 @@ describe('row-level security', () => {
   it('refuses a notification insert from a signed-in user', async () => {
     // Without this, any account could fabricate a farmer alert with a fake
     // animal, a fake reporter and fake GPS coordinates.
-    const colour = uniqueColour();
+    const color = uniqueColor();
     const farmer = await fx.createFarmer();
     const attacker = await fx.createReporter();
-    const post = await fx.createSighting(attacker, { species: 'sheep', primaryColor: colour });
+    const post = await fx.createSighting(attacker, { species: 'sheep', primaryColor: color });
 
     const asAttacker = await anonClient({ email: attacker.email, password: attacker.password });
     const { error } = await asAttacker.from('notifications').insert({
@@ -412,11 +412,11 @@ describe('row-level security', () => {
     // Catches an accidental re-run of rls.sql restoring the public read policy
     // that rls-web.sql dropped — which would ship every farm's inventory to
     // every visitor.
-    const colour = uniqueColour();
+    const color = uniqueColor();
     const farmerA = await fx.createFarmer();
     const farmerB = await fx.createFarmer();
-    await fx.createAnimal(farmerA, { species: 'sheep', name: 'Mine', primaryColor: colour });
-    await fx.createAnimal(farmerB, { species: 'sheep', name: 'Theirs', primaryColor: uniqueColour() });
+    await fx.createAnimal(farmerA, { species: 'sheep', name: 'Mine', primaryColor: color });
+    await fx.createAnimal(farmerB, { species: 'sheep', name: 'Theirs', primaryColor: uniqueColor() });
 
     const asA = await anonClient({ email: farmerA.email, password: farmerA.password });
     const { data } = await asA.from('animals').select('*');

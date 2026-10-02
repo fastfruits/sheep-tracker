@@ -68,7 +68,7 @@ export function ReportForm({ signedIn }: { signedIn: boolean }) {
     const form = new FormData(e.currentTarget);
     form.set('species', species);
     // The picker is controlled React state, not a named input, so it has to be
-    // serialised onto the FormData by hand. The action re-validates it.
+    // serialized onto the FormData by hand. The action re-validates it.
     form.set('markingDetails', JSON.stringify(markings));
     if (photo) form.set('photo', photo);
     if (coords) {
@@ -117,7 +117,7 @@ export function ReportForm({ signedIn }: { signedIn: boolean }) {
                     <> looks like a match, but we couldn&apos;t send the alert.</>
                   )}
                   {/* Matches are ordered strongest first. Saying *why* one is
-                      strong stops a colour-only coincidence reading as a
+                      strong stops a color-only coincidence reading as a
                       certainty, which is what the free-text box used to do. */}
                   {m.matchedMarkings.length > 0 ? (
                     <span className="mt-0.5 block text-xs text-muted-foreground">
@@ -126,7 +126,7 @@ export function ReportForm({ signedIn }: { signedIn: boolean }) {
                     </span>
                   ) : (
                     <span className="mt-0.5 block text-xs text-muted-foreground">
-                      Matched on animal type and colour only.
+                      Matched on animal type and color only.
                     </span>
                   )}
                 </li>
@@ -243,7 +243,7 @@ export function ReportForm({ signedIn }: { signedIn: boolean }) {
       <div>
         <Label htmlFor="caption">Additional notes</Label>
         <Textarea id="caption" name="caption" className="mt-2"
-          placeholder="Condition, behaviour, nearby landmarks…" />
+          placeholder="Condition, behavior, nearby landmarks…" />
       </div>
 
       <div>

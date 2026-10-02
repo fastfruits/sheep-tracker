@@ -46,22 +46,22 @@ function mark(
 }
 
 describe('matchAnimals', () => {
-  it('matches an exact colour on the same species', () => {
+  it('matches an exact color on the same species', () => {
     const a = animal();
     expect(match('sheep', 'white', [a])).toEqual([a]);
   });
 
-  it('does not match a different species, even with an identical colour', () => {
+  it('does not match a different species, even with an identical color', () => {
     expect(match('cow', 'white', [animal({ species: 'sheep' })])).toEqual([]);
   });
 
-  it('matches when the reported colour contains the registered one', () => {
+  it('matches when the reported color contains the registered one', () => {
     // "black and white" sighting vs a "white" animal.
     const a = animal({ primaryColor: 'white' });
     expect(match('sheep', 'black and white', [a])).toEqual([a]);
   });
 
-  it('matches when the registered colour contains the reported one', () => {
+  it('matches when the registered color contains the reported one', () => {
     // "white" sighting vs a "black and white" animal.
     const a = animal({ primaryColor: 'black and white' });
     expect(match('sheep', 'white', [a])).toEqual([a]);
@@ -84,14 +84,14 @@ describe('matchAnimals', () => {
     expect(match('sheep', 'red or tan', [animal({ primaryColor: 'orange' })])).toEqual([]);
   });
 
-  it('returns nothing for an empty colour rather than matching every animal', () => {
+  it('returns nothing for an empty color rather than matching every animal', () => {
     // Without the guard, `registered.includes('')` is always true, so one blank
     // field would alert every farmer who keeps sheep.
     const animals = [animal({ id: 'a' }), animal({ id: 'b', primaryColor: 'black' })];
     expect(match('sheep', '', animals)).toEqual([]);
   });
 
-  it('returns nothing for a whitespace-only colour', () => {
+  it('returns nothing for a whitespace-only color', () => {
     // `'   '.split(/\s+/)` yields ['', ''], which slips past the word rule.
     expect(match('sheep', '   ', [animal()])).toEqual([]);
   });
@@ -100,8 +100,8 @@ describe('matchAnimals', () => {
     expect(match('sheep', 'white', [])).toEqual([]);
   });
 
-  it('matches a registered colour that is a substring of a single word', () => {
-    // "nut" inside "chestnut". Pins today's intentionally-loose behaviour.
+  it('matches a registered color that is a substring of a single word', () => {
+    // "nut" inside "chestnut". Pins today's intentionally-loose behavior.
     const a = animal({ species: 'horse', primaryColor: 'nut' });
     expect(match('horse', 'chestnut', [a])).toEqual([a]);
   });
@@ -127,12 +127,12 @@ describe('matchAnimals', () => {
  * nothing comparable, so markings were excluded from matching entirely.
  */
 describe('matchAnimals with structured markings', () => {
-  it('still matches on colour alone when neither side recorded a marking', () => {
+  it('still matches on color alone when neither side recorded a marking', () => {
     const a = animal();
     expect(match('sheep', 'white', [a])).toEqual([a]);
   });
 
-  it('ranks an animal whose marking was corroborated above one that only shares a colour', () => {
+  it('ranks an animal whose marking was corroborated above one that only shares a color', () => {
     const tagged = animal({
       id: 'tagged',
       markingDetails: [mark('ear_tag', 'yellow', 'left_ear')],
@@ -147,7 +147,7 @@ describe('matchAnimals with structured markings', () => {
     expect(result.map(a => a.id)).toEqual(['tagged', 'plain']);
   });
 
-  it('scores an exact type + colour + location agreement highest', () => {
+  it('scores an exact type + color + location agreement highest', () => {
     const a = animal({ markingDetails: [mark('ear_tag', 'blue', 'left_ear')] });
     const [result] = rankAnimals(
       { species: 'sheep', primaryColor: 'white', markings: [mark('ear_tag', 'blue', 'left_ear')] },
@@ -206,7 +206,7 @@ describe('matchAnimals with structured markings', () => {
     expect(result).toEqual([a]);
   });
 
-  it('does not rule out a colour clash when either side left the location open', () => {
+  it('does not rule out a color clash when either side left the location open', () => {
     // "A blue tag somewhere" and "a yellow tag on the left ear" are not a
     // contradiction — the animal may well have both.
     const a = animal({ markingDetails: [mark('ear_tag', 'blue')] });
@@ -218,7 +218,7 @@ describe('matchAnimals with structured markings', () => {
     expect(match('sheep', 'white', [a], [mark('paint', 'yellow', 'left_ear')])).toEqual([a]);
   });
 
-  it('rescues a match whose registered colour disagrees when the marking is exact', () => {
+  it('rescues a match whose registered color disagrees when the marking is exact', () => {
     // People call the same fleece "white", "cream" and "dirty white". A yellow
     // left-ear tag is not open to interpretation.
     const a = animal({ primaryColor: 'cream' });
@@ -231,7 +231,7 @@ describe('matchAnimals with structured markings', () => {
   });
 
   it('does not rescue on a partial marking match alone', () => {
-    // Only an exact agreement is strong enough to override the colour gate.
+    // Only an exact agreement is strong enough to override the color gate.
     const a = animal({ primaryColor: 'black', markingDetails: [mark('ear_tag', 'yellow', 'left_ear')] });
     expect(match('sheep', 'white', [a], [mark('ear_tag', 'yellow')])).toEqual([]);
   });
@@ -241,14 +241,14 @@ describe('matchAnimals with structured markings', () => {
     expect(match('sheep', 'white', [a], [mark('ear_tag', 'blue', 'left_ear')])).toEqual([]);
   });
 
-  it('can match on markings alone when no colour was given', () => {
-    // The empty-colour guard exists so a blank field cannot alert every farmer
+  it('can match on markings alone when no color was given', () => {
+    // The empty-color guard exists so a blank field cannot alert every farmer
     // who keeps sheep. A specific marking is not a blank field.
     const a = animal({ markingDetails: [mark('ear_tag', 'blue', 'left_ear')] });
     expect(match('sheep', '', [a], [mark('ear_tag', 'blue', 'left_ear')])).toEqual([a]);
   });
 
-  it('still returns nothing when both the colour and the markings are empty', () => {
+  it('still returns nothing when both the color and the markings are empty', () => {
     const animals = [animal({ id: 'a' }), animal({ id: 'b', primaryColor: 'black' })];
     expect(match('sheep', '', animals, [])).toEqual([]);
   });
@@ -281,7 +281,7 @@ describe('matchAnimals with structured markings', () => {
     expect(result.score).toBe(6);
   });
 
-  it('reports colour-only matches as possible, not likely', () => {
+  it('reports color-only matches as possible, not likely', () => {
     const [result] = rankAnimals(
       { species: 'sheep', primaryColor: 'white', markings: [mark('ear_tag', 'blue')] },
       [animal()]
