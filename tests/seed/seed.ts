@@ -40,7 +40,7 @@ export const SEED_ANIMAL = {
   name: 'Dolly',
   primaryColor: 'white',
   // Structured, so a sighting picking the same values from the report form
-  // scores an exact marking match rather than only a colour match.
+  // scores an exact marking match rather than only a color match.
   markings: [
     { type: 'paint', color: 'blue', location: 'back' },
     { type: 'ear_tag', color: 'yellow', location: 'left_ear' },

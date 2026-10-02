@@ -2,7 +2,7 @@
 -- Structured distinguishing markings.
 --
 -- Replaces the free-text "markings" box on both sides of a match with a closed
--- vocabulary (type + colour + location), stored as jsonb. See lib/markings.ts
+-- vocabulary (type + color + location), stored as jsonb. See lib/markings.ts
 -- for the vocabulary and lib/matching.ts for how it is scored.
 --
 -- ── Why a second migration rather than editing the initial one ─────────────
@@ -18,8 +18,8 @@
 -- summary, written from the structured values by formatMarkings(). Every row
 -- that predates this change keeps its text and keeps rendering; the feed, the
 -- post page and the farmer's animal list need no backfill. Matching reads only
--- the jsonb, so a legacy row scores 0 on markings and falls back to the colour
--- rule — exactly the behaviour it had before.
+-- the jsonb, so a legacy row scores 0 on markings and falls back to the color
+-- rule — exactly the behavior it had before.
 --
 -- ── Safety ─────────────────────────────────────────────────────────────────
 --

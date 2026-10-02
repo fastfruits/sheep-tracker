@@ -6,7 +6,7 @@
  * wrote "blue tag left ear", "L ear blue tag #42" and "blue eartag" — all
  * correct, none comparable — so the marking a farmer registered could never be
  * matched against the marking a reporter typed. Matching therefore ignored
- * markings entirely and ran on species + primary colour alone.
+ * markings entirely and ran on species + primary color alone.
  *
  * Everything here is a closed vocabulary so both sides of a match pick from the
  * same list. The free-text field survives as `markingNotes`, for the genuinely
@@ -18,7 +18,7 @@ export type MarkingType =
   | 'brand' | 'halter' | 'bell' | 'patch' | 'other';
 
 export type MarkingColor =
-  | 'black' | 'white' | 'grey' | 'brown' | 'tan' | 'red' | 'orange'
+  | 'black' | 'white' | 'gray' | 'brown' | 'tan' | 'red' | 'orange'
   | 'yellow' | 'green' | 'blue' | 'purple' | 'pink' | 'other';
 
 export type MarkingLocation =
@@ -51,11 +51,11 @@ export const MARKING_TYPES: { value: MarkingType; label: string; emoji: string }
   { value: 'other',    label: 'Other',      emoji: '❓' },
 ];
 
-/** `swatch` is a plain CSS colour for the picker dots — not a theme token. */
+/** `swatch` is a plain CSS color for the picker dots — not a theme token. */
 export const MARKING_COLORS: { value: MarkingColor; label: string; swatch: string }[] = [
   { value: 'black',  label: 'Black',  swatch: '#1c1917' },
   { value: 'white',  label: 'White',  swatch: '#fafaf9' },
-  { value: 'grey',   label: 'Grey',   swatch: '#a1a1aa' },
+  { value: 'gray',   label: 'Gray',   swatch: '#a1a1aa' },
   { value: 'brown',  label: 'Brown',  swatch: '#78350f' },
   { value: 'tan',    label: 'Tan',    swatch: '#d6b483' },
   { value: 'red',    label: 'Red',    swatch: '#dc2626' },
@@ -149,7 +149,9 @@ export function parseMarkings(value: unknown): Marking[] {
   const out: Marking[] = [];
   for (const entry of raw) {
     if (!entry || typeof entry !== 'object') continue;
-    const { type, color, location } = entry as Record<string, unknown>;
+    const { type, color: rawColor, location } = entry as Record<string, unknown>;
+    // Rows written before the vocabulary switched to American spelling.
+    const color = rawColor === 'grey' ? 'gray' : rawColor;
     if (typeof type !== 'string' || !TYPE_VALUES.has(type)) continue;
     if (typeof color !== 'string' || !COLOR_VALUES.has(color)) continue;
     const loc = typeof location === 'string' && LOCATION_VALUES.has(location)

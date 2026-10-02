@@ -80,13 +80,94 @@ get a profile row.
 - `lib/data/` — server-side queries. Import `server-only`.
 - `lib/supabase/` — `server.ts` (cookies), `client.ts` (browser),
   `admin.ts` (service role, never import from a client component).
-- `lib/matching.ts` — sighting → animal match rules, ported from the previous
-  React Native build.
+- `lib/matching.ts` — sighting → animal match rules. See
+  [How matching works](#how-matching-works).
+- `lib/markings.ts` — the structured-marking vocabulary and its parser.
 - `proxy.ts` — refreshes the Supabase session on every request.
 
 Feed and profile pages render on the server so sightings appear in the HTML that
 search engines and link-preview bots receive. `/post/[id]` generates per-post
 Open Graph metadata.
+
+## How matching works
+
+When a sighting is reported, `lib/notify.ts` loads every registered animal of
+the same species (except the reporter's own) with the service-role client, and
+`rankAnimals()` in `lib/matching.ts` decides which of them the sighting might
+be. Each match writes one notification row to that animal's owner.
+
+### Inputs
+
+Both the reporter and the farmer describe an animal the same way:
+
+- **Species** — must match exactly. Nothing crosses species.
+- **Primary color** — free text ("black and white", "cream").
+- **Markings** — up to six structured entries, each a closed-vocabulary
+  **type** (ear tag, spray paint, collar, …), **color** (blue, yellow, …) and
+  **location** (left ear, rump, …, or *Not sure*). Defined in
+  `lib/markings.ts`.
+
+Markings used to be a free-text box, and "blue tag left ear", "L ear blue tag
+#42" and "blue eartag" could never be compared. The structured fields replace
+it for matching. A free-text **marking notes** field is kept for oddities
+("torn left ear") but is never used for matching.
+
+### Color rule (the baseline)
+
+Carried over from the React Native build, and deliberately loose. Colors match
+if either one contains the other, or they share a word longer than two
+characters, case-insensitively. So "black and white" matches "white". A blank
+or whitespace-only color matches nothing. Without that guard, one empty field
+would alert every sheep farmer.
+
+### Marking scores
+
+Each reported marking is compared with each of the animal's registered
+markings, and the best pair counts:
+
+| Reported vs. registered | Score |
+|---|---|
+| Same type, color **and** location | **3** (exact) |
+| Same type and color, one side said *Not sure* | 2 |
+| Same type and color, different locations | 1 |
+| Same type, same location, **different color** | conflict |
+| Anything else | 0 |
+
+"Both ears" agrees with "left ear" and "right ear". An animal's score is the
+sum across all reported markings. A registered marking the reporter didn't
+mention costs nothing, because people miss markings far more often than they
+invent them.
+
+### Decision
+
+For each same-species animal:
+
+1. **Rule out.** If any reported marking conflicts (a yellow left-ear tag where
+   the farmer registered a blue one) and no other marking scored, the animal is
+   dropped. It is a different animal.
+2. **Gate on color.** Otherwise the animal is kept if the color rule matches,
+   **or** if its marking score is at least 3. A tag that matches exactly
+   *rescues* an animal whose fleece was described differently ("white" vs.
+   "dirty cream").
+3. **Rank.** Matches are sorted by score, highest first. Ties keep database
+   order. Each match gets a confidence level:
+   - `strong`: score ≥ 3
+   - `likely`: score 1–2
+   - `possible`: color only, no markings corroborated
+
+The reporter's confirmation screen shows the confidence and the markings that
+lined up, so a color-only match never looks like a certainty. The farmer's
+alert includes the markings the reporter described, so the farmer can judge the
+match without opening the post.
+
+### Legacy rows
+
+Animals and posts from before structured markings have an empty
+`markings_details` array. They score 0 on markings and fall back to the color
+rule, which is how they behaved before. Every write also stores a readable
+summary in the old `markings` text column (`formatMarkings()`), so older pages
+keep rendering without a backfill. `parseMarkings()` drops any value outside
+the vocabulary instead of trying to repair it.
 
 ## Testing
 
@@ -98,9 +179,9 @@ npm run lint
 ```
 
 - `tests/unit/` — pure logic. `lib/matching.ts`'s rules, including the sharp
-  edges (the two-character word cutoff, empty and whitespace-only colours).
+  edges (the two-character word cutoff, empty and whitespace-only colors).
 - `tests/integration/` — `lib/notify.ts` against a real local Postgres with
-  real RLS. Three of these assert policy behaviour that cannot be expressed
+  real RLS. Three of these assert policy behavior that cannot be expressed
   any other way: one farmer cannot read another's notifications, an
   authenticated client cannot fabricate an alert, and `animals` is owner-only.
 
