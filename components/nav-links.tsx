@@ -2,12 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Megaphone, UserRound, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const LINKS = [
-  { href: '/', label: 'Report a sighting' },
-  { href: '/feed', label: 'Community' },
-  { href: '/account', label: 'Account' },
+  { href: '/', label: 'Report a sighting', icon: Megaphone },
+  { href: '/feed', label: 'Community', icon: Users },
+  { href: '/account', label: 'Account', icon: UserRound },
 ];
 
 export function NavLinks({ unread, signedIn }: { unread: number; signedIn: boolean }) {
@@ -23,12 +24,14 @@ export function NavLinks({ unread, signedIn }: { unread: number; signedIn: boole
             href={link.href}
             aria-current={active ? 'page' : undefined}
             className={cn(
-              'relative inline-flex min-h-11 items-center rounded-full px-2.5 py-2 text-[13px] font-semibold transition-colors sm:px-4 sm:text-sm md:min-h-0',
+              'relative inline-flex min-h-11 items-center gap-2 rounded-full px-2.5 py-2 text-[13px] font-semibold transition-colors sm:px-4 sm:text-sm md:min-h-0',
               active
                 ? 'bg-secondary text-brand'
                 : 'text-muted-foreground hover:bg-secondary/60 hover:text-brand'
             )}
           >
+            {/* Icons only from sm up: below that the three pills already fill a 360px row. */}
+            <link.icon className="hidden size-4 sm:block" aria-hidden />
             <span className="hidden sm:inline">{link.label}</span>
             <span className="sm:hidden">{link.label.split(' ')[0]}</span>
             {link.href === '/account' && signedIn && unread > 0 && (
