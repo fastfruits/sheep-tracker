@@ -8,6 +8,7 @@ import {
 import { speciesInfo } from '@/lib/species';
 import { PostPhoto } from '@/components/post-photo';
 import { FollowButton } from '@/components/follow-button';
+import { UserAvatar } from '@/components/user-avatar';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,13 +23,6 @@ export async function generateMetadata({ params }: PageProps<'/u/[userId]'>): Pr
       ? `${user.name}${user.farmName ? ` of ${user.farmName}` : ''} on SheepFinder.`
       : `${user.name}'s sightings on SheepFinder.`,
   };
-}
-
-function initialColor(str: string) {
-  const colors = ['#2E7D32', '#1565C0', '#6A1B9A', '#AD1457', '#00695C', '#E65100'];
-  let h = 0;
-  for (let i = 0; i < str.length; i++) h = str.charCodeAt(i) + ((h << 5) - h);
-  return colors[Math.abs(h) % colors.length];
 }
 
 export default async function ProfilePage({ params }: PageProps<'/u/[userId]'>) {
@@ -50,13 +44,7 @@ export default async function ProfilePage({ params }: PageProps<'/u/[userId]'>) 
       </Link>
 
       <header className="mt-6 flex flex-col items-center text-center">
-        <span
-          className="grid size-16 place-items-center rounded-full text-xl font-extrabold text-white sm:size-20 sm:text-2xl"
-          style={{ backgroundColor: initialColor(user.name) }}
-          aria-hidden
-        >
-          {user.name.charAt(0).toUpperCase()}
-        </span>
+        <UserAvatar name={user.name} className="size-16 text-xl font-extrabold sm:size-20 sm:text-2xl" />
         <h1 className="mt-3 text-xl font-extrabold tracking-tight sm:text-2xl">{user.name}</h1>
         {user.isFarmer && (
           <p className="mt-2 rounded-full bg-secondary px-3 py-1 text-sm font-semibold text-brand">

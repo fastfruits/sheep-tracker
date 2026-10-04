@@ -17,7 +17,7 @@ export async function SiteNav() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4 sm:h-16 sm:px-6">
+      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:h-16 sm:px-6">
         <Link href="/" className="flex min-h-11 items-center gap-2 font-extrabold tracking-tight md:min-h-0">
           <span aria-hidden className="text-lg sm:text-xl">🐑</span>
           {/* Below 360px the wordmark plus three nav pills overflow the row;

@@ -34,7 +34,7 @@ const linkClass =
 export function SiteFooter() {
   return (
     <footer className="mt-12 border-t border-border bg-card sm:mt-16">
-      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
         <div className="grid gap-6 sm:grid-cols-2 sm:gap-8 md:grid-cols-4">
           <div className="sm:col-span-2 md:col-span-1">
             <Link href="/" className="flex items-center gap-2 font-extrabold tracking-tight">
