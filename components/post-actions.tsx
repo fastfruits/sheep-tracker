@@ -78,7 +78,7 @@ export function PostActions({
             className={cn(
               'inline-flex min-h-11 items-center rounded-full px-3 py-1 text-xs font-bold transition-colors md:min-h-0',
               optimisticConfirm.confirmed
-                ? 'bg-confirm text-white'
+                ? 'bg-confirm text-confirm-foreground'
                 : 'bg-confirm-bg text-confirm hover:brightness-95'
             )}
             onClick={() => {
