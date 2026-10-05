@@ -24,7 +24,7 @@ export function NavLinks({ unread, signedIn }: { unread: number; signedIn: boole
             href={link.href}
             aria-current={active ? 'page' : undefined}
             className={cn(
-              'relative inline-flex min-h-11 items-center gap-2 rounded-full px-2.5 py-2 text-[13px] font-semibold transition-colors sm:px-4 sm:text-sm md:min-h-0',
+              'relative inline-flex min-h-11 items-center gap-2 rounded-full px-2.5 py-2 text-[13px] max-[359px]:px-2 font-semibold transition-colors sm:px-4 sm:text-sm md:min-h-0',
               active
                 ? 'bg-secondary text-brand'
                 : 'text-muted-foreground hover:bg-secondary/60 hover:text-brand'
@@ -36,7 +36,7 @@ export function NavLinks({ unread, signedIn }: { unread: number; signedIn: boole
             <span className="sm:hidden">{link.label.split(' ')[0]}</span>
             {link.href === '/account' && signedIn && unread > 0 && (
               <span
-                className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-destructive px-1 text-[10px] font-extrabold text-white"
+                className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-destructive px-1 text-[10px] font-extrabold text-destructive-foreground"
                 aria-label={`${unread} unread alerts`}
               >
                 {unread > 9 ? '9+' : unread}

@@ -4,7 +4,9 @@ import './globals.css';
 
 import { SiteFooter } from '@/components/site-footer';
 import { SiteNav } from '@/components/site-nav';
+import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/sonner';
+import { VisionScript } from '@/components/vision-script';
 
 const geistSans = Geist({ variable: '--font-sans', subsets: ['latin'] });
 const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] });
@@ -21,14 +23,18 @@ export const metadata: Metadata = {
 };
 
 /**
- * Explicit so mobile browser chrome picks up the cream page color. No
+ * Explicit so mobile browser chrome picks up the page color. Follows the OS
+ * scheme; a manual theme override can't be known here at request time. No
  * `viewport-fit: cover`: there is no fixed bottom UI, so it would only add
  * safe-area obligations for no gain.
  */
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#F7F6F2',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#F7F6F2' },
+    { media: '(prefers-color-scheme: dark)', color: '#121410' },
+  ],
 };
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
@@ -36,12 +42,19 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      // The theme and vision scripts set attributes on <html> before hydration.
+      suppressHydrationWarning
     >
+      <head>
+        <VisionScript />
+      </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
-        <SiteNav />
-        <main className="flex-1">{children}</main>
-        <SiteFooter />
-        <Toaster position="top-center" />
+        <ThemeProvider>
+          <SiteNav />
+          <main className="flex-1">{children}</main>
+          <SiteFooter />
+          <Toaster position="top-center" />
+        </ThemeProvider>
       </body>
     </html>
   );

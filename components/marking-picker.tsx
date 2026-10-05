@@ -108,7 +108,7 @@ export function MarkingPicker({
                   className={cn(
                     'inline-flex min-h-11 items-center gap-1 rounded-full border-2 px-3 py-1.5 text-sm font-semibold transition-colors md:min-h-0',
                     type === t.value
-                      ? 'border-brand bg-brand text-white'
+                      ? 'border-primary bg-primary text-primary-foreground'
                       : 'border-border bg-background hover:border-brand/40'
                   )}
                 >
@@ -132,7 +132,7 @@ export function MarkingPicker({
                   className={cn(
                     'inline-flex min-h-11 items-center gap-2 rounded-full border-2 px-3 py-1.5 text-sm font-semibold transition-colors md:min-h-0',
                     color === c.value
-                      ? 'border-brand bg-brand text-white'
+                      ? 'border-primary bg-primary text-primary-foreground'
                       : 'border-border bg-background hover:border-brand/40'
                   )}
                 >

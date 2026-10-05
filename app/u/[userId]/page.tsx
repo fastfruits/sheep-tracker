@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { Check, TriangleAlert } from 'lucide-react';
 
 import {
   getProfile, getPostsByUser, getFollowCounts, getCurrentUser, isFollowing,
@@ -93,10 +94,18 @@ export default async function ProfilePage({ params }: PageProps<'/u/[userId]'>) 
                       emoji={info?.emoji ?? '🐾'}
                       sizes="(max-width: 640px) 50vw, 33vw"
                     />
-                    <span
-                      className={`absolute left-2 top-2 size-2.5 rounded-full ${escaped ? 'bg-escaped' : 'bg-resolved'}`}
-                      aria-label={escaped ? 'Open sighting' : 'Resolved'}
-                    />
+                    {/* Icon shape, not just color, tells the states apart (WCAG 1.4.1). */}
+                    {post.isSighting && (
+                      <span
+                        className={`absolute left-2 top-2 grid size-6 place-items-center rounded-full border-2 border-card ${escaped ? 'bg-escaped' : 'bg-resolved'}`}
+                        role="img"
+                        aria-label={escaped ? 'Open sighting' : 'Resolved'}
+                      >
+                        {escaped
+                          ? <TriangleAlert className="size-3.5 text-card" strokeWidth={2.75} aria-hidden />
+                          : <Check className="size-3.5 text-card" strokeWidth={3} aria-hidden />}
+                      </span>
+                    )}
                   </Link>
                 </li>
               );

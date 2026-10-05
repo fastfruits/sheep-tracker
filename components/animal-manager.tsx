@@ -99,7 +99,7 @@ export function AnimalManager({ animals }: { animals: RegisteredAnimal[] }) {
                 aria-pressed={species === s.value}
                 className={cn(
                   'inline-flex min-h-11 items-center rounded-full border-2 px-3 py-1.5 text-sm font-semibold transition-colors md:min-h-0',
-                  species === s.value ? 'border-brand bg-brand text-white' : 'border-border hover:border-brand/40'
+                  species === s.value ? 'border-primary bg-primary text-primary-foreground' : 'border-border hover:border-brand/40'
                 )}
               >
                 <span aria-hidden>{s.emoji}</span> {s.label}

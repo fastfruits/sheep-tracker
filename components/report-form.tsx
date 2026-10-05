@@ -210,7 +210,7 @@ export function ReportForm({ signedIn }: { signedIn: boolean }) {
               className={cn(
                 'inline-flex min-h-11 items-center rounded-full border-2 px-4 py-2 text-sm font-semibold transition-colors md:min-h-0',
                 species === s.value
-                  ? 'border-brand bg-brand text-white'
+                  ? 'border-primary bg-primary text-primary-foreground'
                   : 'border-border bg-card hover:border-brand/40'
               )}
             >

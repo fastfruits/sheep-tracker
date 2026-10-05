@@ -34,6 +34,12 @@ export function AlertList({ notifications }: { notifications: FarmerNotification
           <div className="flex items-center gap-2">
             <span aria-hidden>{speciesInfo(n.species)?.emoji ?? '🐾'}</span>
             <p className="min-w-0 truncate font-bold">Possible match: {n.animalName}</p>
+            {/* Unread is otherwise signalled only by the amber fill. */}
+            {!n.read && (
+              <span className="shrink-0 rounded-full border border-amber-note-border px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide">
+                New
+              </span>
+            )}
             <time className="ml-auto shrink-0 text-xs text-muted-foreground" dateTime={new Date(n.timestamp).toISOString()}>
               {timeAgo(n.timestamp)}
             </time>
