@@ -32,7 +32,7 @@ export function ProfileCard({ user, postCount }: { user: User | null; postCount:
       <div className="h-14 bg-gradient-to-r from-brand to-brand-mid" aria-hidden />
       <div className="-mt-8 px-5 pb-5 text-center">
         <Link href={`/u/${user.id}`} className="inline-block rounded-full ring-4 ring-card">
-          <UserAvatar name={user.name} className="size-16 text-xl" />
+          <UserAvatar name={user.name} src={user.avatarUrl} className="size-16 text-xl" />
         </Link>
         <Link href={`/u/${user.id}`} className="mt-2 block font-bold hover:underline">
           {user.name}
@@ -64,7 +64,7 @@ export function ReportPrompt({ user }: { user: User | null }) {
     <section className={`${cardClass} p-4`}>
       <div className="flex items-center gap-3">
         {user ? (
-          <UserAvatar name={user.name} className="size-11" />
+          <UserAvatar name={user.name} src={user.avatarUrl} className="size-11" />
         ) : (
           <span className="grid size-11 shrink-0 place-items-center rounded-full bg-secondary text-xl" aria-hidden>🐾</span>
         )}

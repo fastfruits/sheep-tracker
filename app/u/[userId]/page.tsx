@@ -45,7 +45,7 @@ export default async function ProfilePage({ params }: PageProps<'/u/[userId]'>) 
       </Link>
 
       <header className="mt-6 flex flex-col items-center text-center">
-        <UserAvatar name={user.name} className="size-16 text-xl font-extrabold sm:size-20 sm:text-2xl" />
+        <UserAvatar name={user.name} src={user.avatarUrl} className="size-16 text-xl font-extrabold sm:size-20 sm:text-2xl" />
         <h1 className="mt-3 text-xl font-extrabold tracking-tight sm:text-2xl">{user.name}</h1>
         {user.isFarmer && (
           <p className="mt-2 rounded-full bg-secondary px-3 py-1 text-sm font-semibold text-brand">

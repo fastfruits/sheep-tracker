@@ -9,6 +9,7 @@ import {
 import { logout } from '@/app/actions/auth';
 import { AnimalManager } from '@/components/animal-manager';
 import { AlertList } from '@/components/alert-list';
+import { AvatarUploader } from '@/components/avatar-uploader';
 import { Button } from '@/components/ui/button';
 
 export const metadata: Metadata = {
@@ -33,7 +34,8 @@ export default async function AccountPage() {
     <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 sm:py-8">
       <header className="flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
         <div className="min-w-0">
-          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{user.name}</h1>
+          <AvatarUploader name={user.name} src={user.avatarUrl} />
+          <h1 className="mt-4 text-2xl font-extrabold tracking-tight sm:text-3xl">{user.name}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{user.email}</p>
           {user.isFarmer && (
             <p className="mt-2 inline-block rounded-full bg-secondary px-3 py-1 text-sm font-semibold text-brand">

@@ -7,6 +7,7 @@ import { speciesInfo, speciesLabel, timeAgo } from '@/lib/species';
 import { PostPhoto } from '@/components/post-photo';
 import { PostActions } from '@/components/post-actions';
 import { MarkingList } from '@/components/marking-list';
+import { UserAvatar } from '@/components/user-avatar';
 
 export const dynamic = 'force-dynamic';
 
@@ -168,12 +169,15 @@ export default async function PostPage({ params }: PageProps<'/post/[id]'>) {
           <h2 className="text-base font-bold sm:text-lg">Comments</h2>
           <ul className="mt-3 space-y-3">
             {post.comments.map(c => (
-              <li key={c.id} className="rounded-xl bg-card p-3 text-sm ring-1 ring-border">
-                <span className="font-bold">{c.userName}</span>{' '}
-                <time className="text-xs text-muted-foreground" dateTime={new Date(c.timestamp).toISOString()}>
-                  {timeAgo(c.timestamp)}
-                </time>
-                <p className="mt-1">{c.text}</p>
+              <li key={c.id} className="flex gap-3 rounded-xl bg-card p-3 text-sm ring-1 ring-border">
+                <UserAvatar name={c.userName} src={c.userAvatar} className="size-8 text-xs" />
+                <div className="min-w-0">
+                  <span className="font-bold">{c.userName}</span>{' '}
+                  <time className="text-xs text-muted-foreground" dateTime={new Date(c.timestamp).toISOString()}>
+                    {timeAgo(c.timestamp)}
+                  </time>
+                  <p className="mt-1 break-words">{c.text}</p>
+                </div>
               </li>
             ))}
           </ul>

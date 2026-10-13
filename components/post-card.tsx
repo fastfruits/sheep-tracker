@@ -40,7 +40,7 @@ export function PostCard({
       <div className="space-y-3 px-4 pt-4">
         <div className="flex items-center gap-3">
           <Link href={`/u/${post.userId}`} className="flex min-w-0 items-center gap-3 hover:underline">
-            <UserAvatar name={post.userName} className="size-11" />
+            <UserAvatar name={post.userName} src={post.userAvatar} className="size-11" />
             <span className="min-w-0">
               <span className="block truncate text-sm font-bold leading-tight">{post.userName}</span>
               <time className="block text-xs text-muted-foreground" dateTime={new Date(post.timestamp).toISOString()}>

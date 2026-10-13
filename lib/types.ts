@@ -12,6 +12,7 @@ export interface User {
   email?: string;
   isFarmer: boolean;
   farmName?: string;
+  avatarUrl?: string;
 }
 
 export interface RegisteredAnimal {
@@ -38,6 +39,7 @@ export interface Comment {
   id: string;
   userId: string;
   userName: string;
+  userAvatar?: string;
   text: string;
   timestamp: number;
 }
@@ -46,6 +48,7 @@ export interface Post {
   id: string;
   userId: string;
   userName: string;
+  userAvatar?: string;
   photo?: string;
   caption: string;
   species?: Species;
