@@ -112,7 +112,7 @@ export function MarkingPicker({
                       : 'border-border bg-background hover:border-brand/40'
                   )}
                 >
-                  <span aria-hidden>{t.emoji}</span> {t.label}
+                  <span aria-hidden></span> {t.label}
                 </button>
               ))}
             </div>
