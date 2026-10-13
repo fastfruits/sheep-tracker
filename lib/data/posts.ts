@@ -10,10 +10,10 @@ import type { Post, User, RegisteredAnimal, FarmerNotification } from '@/lib/typ
 // empty. Joining also stops the stored name going stale when a user renames.
 const POST_SELECT = `
   *,
-  profiles!posts_user_id_fkey(name),
+  profiles!posts_user_id_fkey(name, avatar_url),
   likes(user_id),
   confirmations(user_id),
-  comments(id, user_id, text, created_at, profiles!comments_user_id_fkey(name))
+  comments(id, user_id, text, created_at, profiles!comments_user_id_fkey(name, avatar_url))
 `;
 
 /** Ported verbatim from store/app-store.tsx. */
@@ -23,6 +23,7 @@ export function transformPost(row: any): Post {
     id: row.id,
     userId: row.user_id,
     userName: row.profiles?.name ?? 'Unknown',
+    userAvatar: row.profiles?.avatar_url ?? undefined,
     photo: row.photo_url ?? undefined,
     caption: row.caption ?? '',
     species: row.species,
@@ -43,6 +44,7 @@ export function transformPost(row: any): Post {
         id: c.id,
         userId: c.user_id,
         userName: c.profiles?.name ?? 'Unknown',
+        userAvatar: c.profiles?.avatar_url ?? undefined,
         text: c.text,
         timestamp: new Date(c.created_at).getTime(),
       }))
@@ -98,7 +100,7 @@ export async function getProfile(userId: string): Promise<User | null> {
   const supabase = await createClient();
   const { data } = await supabase
     .from('profiles')
-    .select('id, name, is_farmer, farm_name')
+    .select('id, name, is_farmer, farm_name, avatar_url')
     .eq('id', userId)
     .maybeSingle();
 
@@ -108,6 +110,7 @@ export async function getProfile(userId: string): Promise<User | null> {
     name: data.name,
     isFarmer: data.is_farmer,
     farmName: data.farm_name ?? undefined,
+    avatarUrl: data.avatar_url ?? undefined,
   };
 }
 

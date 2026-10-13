@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
 const COLORS = ['#2E7D32', '#1565C0', '#6A1B9A', '#AD1457', '#00695C', '#E65100'];
@@ -9,15 +10,26 @@ export function initialColor(str: string) {
   return COLORS[Math.abs(h) % COLORS.length];
 }
 
-/** Initial-letter avatar. Size and text size come from `className`. */
-export function UserAvatar({ name, className }: { name: string; className?: string }) {
+/**
+ * Profile picture, or an initial-letter avatar when there isn't one. Size and
+ * text size come from `className`. Decorative: the name is always rendered
+ * next to it.
+ */
+export function UserAvatar({ name, src, className }: { name: string; src?: string; className?: string }) {
   return (
     <span
-      className={cn('grid size-9 shrink-0 place-items-center rounded-full text-sm font-bold text-white', className)}
-      style={{ backgroundColor: initialColor(name) }}
+      className={cn(
+        'relative grid size-9 shrink-0 place-items-center overflow-hidden rounded-full text-sm font-bold text-white',
+        className
+      )}
+      style={src ? undefined : { backgroundColor: initialColor(name) }}
       aria-hidden
     >
-      {name.charAt(0).toUpperCase()}
+      {src ? (
+        <Image src={src} alt="" fill sizes="96px" className="object-cover" />
+      ) : (
+        name.charAt(0).toUpperCase()
+      )}
     </span>
   );
 }

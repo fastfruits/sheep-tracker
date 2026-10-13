@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#1B4D0E"/>
+  <!-- legs -->
+  <rect x="21" y="40" width="5" height="12" rx="2.5" fill="#1a1a1a"/>
+  <rect x="36" y="40" width="5" height="12" rx="2.5" fill="#1a1a1a"/>
+  <!-- fleece -->
+  <g fill="#F7F6F2">
+    <circle cx="22" cy="32" r="9"/>
+    <circle cx="31" cy="26" r="10"/>
+    <circle cx="40" cy="31" r="9"/>
+    <circle cx="27" cy="38" r="8"/>
+    <circle cx="37" cy="38" r="8"/>
+  </g>
+  <!-- head -->
+  <ellipse cx="47" cy="27" rx="7" ry="8.5" fill="#1a1a1a"/>
+  <ellipse cx="41.5" cy="22" rx="3.5" ry="2" fill="#1a1a1a" transform="rotate(-25 41.5 22)"/>
+  <circle cx="49" cy="25" r="1.6" fill="#F7F6F2"/>
+</svg>
