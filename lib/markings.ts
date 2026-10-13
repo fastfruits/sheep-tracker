@@ -38,17 +38,17 @@ export interface Marking {
  */
 export const MAX_MARKINGS = 6;
 
-export const MARKING_TYPES: { value: MarkingType; label: string; emoji: string }[] = [
-  { value: 'ear_tag',  label: 'Ear tag',    emoji: '🏷️' },
-  { value: 'paint',    label: 'Spray paint', emoji: '🎨' },
-  { value: 'collar',   label: 'Collar',     emoji: '⭕' },
-  { value: 'horn_tag', label: 'Horn tag',   emoji: '🐏' },
-  { value: 'leg_band', label: 'Leg band',   emoji: '🦵' },
-  { value: 'brand',    label: 'Brand',      emoji: '🔥' },
-  { value: 'halter',   label: 'Halter',     emoji: '🪢' },
-  { value: 'bell',     label: 'Bell',       emoji: '🔔' },
-  { value: 'patch',    label: 'Patch',      emoji: '🐾' },
-  { value: 'other',    label: 'Other',      emoji: '❓' },
+export const MARKING_TYPES: { value: MarkingType; label: string;}[] = [
+  { value: 'ear_tag',  label: 'Ear tag'},
+  { value: 'paint',    label: 'Spray paint'},
+  { value: 'collar',   label: 'Collar'},
+  { value: 'horn_tag', label: 'Horn tag'},
+  { value: 'leg_band', label: 'Leg band'},
+  { value: 'brand',    label: 'Brand'},
+  { value: 'halter',   label: 'Halter'},
+  { value: 'bell',     label: 'Bell'},
+  { value: 'patch',    label: 'Patch'},
+  { value: 'other',    label: 'Other'},
 ];
 
 /** `swatch` is a plain CSS color for the picker dots — not a theme token. */
