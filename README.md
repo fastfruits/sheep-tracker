@@ -6,14 +6,6 @@ location.
 
 Next.js App Router · React Server Components · Supabase · Tailwind v4 + shadcn/ui.
 
-## Getting started
-
-```bash
-npm install
-cp .env.example .env   # then fill it in
-npm run dev
-```
-
 ### Environment
 
 | Variable | Where | Notes |
@@ -31,25 +23,8 @@ two things a visitor's own session must not be able to do.
 **Local development and tests** use the Supabase CLI stack, built from
 `supabase/migrations/`:
 
-```bash
-npm run db:start     # docker required; ~60s on the first run
-npm run db:seed      # farmer@example.test + reporter@example.test, password test-password-123
-npm run dev:local    # next dev pointed at the local stack instead of the hosted project
-npm run db:reset     # drop, replay migrations, re-seed
-npm run db:stop
-```
-
-`npm run dev` still points at the hosted project via `.env`; `dev:local`
-injects the local stack's credentials instead, so the two never get confused.
-
 **The hosted project** predates the migrations and is still managed by the
 hand-run files, in order, once per project:
-
-```bash
-supabase/schema.sql     # tables, storage bucket, RLS enabled (no policies)
-supabase/rls.sql        # the policies
-supabase/rls-web.sql    # tightening pass; requires the service-role key
-```
 
 `schema.sql` enables RLS but grants nothing, so the app cannot read anything
 until `rls.sql` runs. All three are safe to re-run.
@@ -171,13 +146,6 @@ the vocabulary instead of trying to repair it.
 
 ## Testing
 
-```bash
-npm test           # unit tests only — no docker needed
-npm run test:unit  # unit + integration (needs `npm run db:start`)
-npm run typecheck
-npm run lint
-```
-
 - `tests/unit/` — pure logic. `lib/matching.ts`'s rules, including the sharp
   edges (the two-character word cutoff, empty and whitespace-only colors).
 - `tests/integration/` — `lib/notify.ts` against a real local Postgres with
@@ -200,13 +168,3 @@ calls `cookies()` and `revalidatePath()`.
 Framework Preset **Next.js** (auto-detected — there is deliberately no
 `vercel.json`). Set all three environment variables for Production *and*
 Preview.
-
-> If this project was previously deployed as the Expo build, change the
-> Framework Preset from **Other** to **Next.js** and clear the build-command and
-> output-directory overrides.
-
-## History
-
-This was an Expo / React Native app rendered to web via react-native-web. It is
-now web-only; the native build was removed. The React Native source remains in
-git history.
