@@ -17,6 +17,7 @@
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
     "db:seed": "tsx tests/seed/seed.ts",
+    "db:seed:demo": "tsx tests/seed/demo.ts",
     "db:status": "supabase status",
     "dev:local": "tsx scripts/dev-local.mts"
   },
